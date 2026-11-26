@@ -95,30 +95,31 @@
       width: 10px;
     }
     .touch-pad-btn {
-      background: rgba(15, 23, 34, 0.65);
-      border: 1px solid rgba(148, 163, 184, 0.38);
-      backdrop-filter: blur(4px);
+      background: rgba(15, 23, 38, 0.85);
+      border: 2px solid rgba(148, 163, 184, 0.65);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
       border-radius: 9999px;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: rgba(241, 245, 249, 0.92);
-      font-weight: 600;
+      color: #f8fafc;
+      font-weight: 700;
       font-size: 0.72rem;
       letter-spacing: 0.08em;
       cursor: pointer;
       transition: transform 0.08s ease, background 0.1s ease, border-color 0.1s ease;
     }
     .touch-pad-btn.active, .touch-pad-btn:active {
-      background: rgba(56, 189, 248, 0.42);
-      border-color: rgba(125, 211, 252, 0.95);
+      background: rgba(56, 189, 248, 0.55);
+      border-color: #7dd3fc;
       transform: scale(0.92);
       color: #ffffff;
     }
     #rotate-overlay {
       display: none;
     }
-    @media screen and (max-width: 760px) and (orientation: portrait) {
+    @media screen and (max-width: 600px) and (orientation: portrait) {
       #rotate-overlay {
         display: flex;
       }
@@ -220,6 +221,7 @@
         <div class="hidden sm:flex items-center gap-3 mr-3 text-[10px] tracking-[0.2em] text-slate-300 uppercase">
           <span id="hud-secrets-count">SECRETS: 0/12</span>
         </div>
+        <button id="btn-hud-touch-toggle" class="px-2.5 py-1.5 bg-slate-900/85 hover:bg-slate-800 border border-sky-500/60 rounded text-[10px] tracking-[0.18em] text-sky-200 uppercase">PAD</button>
         <button id="btn-hud-audio" class="px-2.5 py-1.5 bg-slate-900/75 hover:bg-slate-800 border border-slate-700/70 rounded text-[10px] tracking-[0.18em] text-slate-200 uppercase">SFX</button>
         <button id="btn-hud-fullscreen" class="px-2.5 py-1.5 bg-slate-900/75 hover:bg-slate-800 border border-slate-700/70 rounded text-[10px] tracking-[0.18em] text-slate-200 uppercase">FULL</button>
         <button id="btn-hud-pause" class="px-3 py-1.5 bg-slate-900/85 hover:bg-slate-800 border border-slate-600/80 rounded text-[10px] tracking-[0.22em] text-white uppercase">PAUSE</button>
@@ -248,27 +250,27 @@
   </div>
 
   <!-- MOBILE / TABLET LANDSCAPE TOUCH CONTROLS -->
-  <div id="touch-controls" class="hidden fixed inset-0 z-15 pointer-events-none flex items-end justify-between p-4 sm:p-6">
+  <div id="touch-controls" class="hidden fixed inset-0 z-20 pointer-events-none flex items-end justify-between p-4 sm:p-6">
     <!-- Left Movement Cluster -->
     <div class="flex items-center gap-3 pointer-events-auto">
       <button id="touch-left" class="touch-pad-btn w-14 h-14 sm:w-16 sm:h-16" aria-label="Move Left">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
       </button>
       <button id="touch-right" class="touch-pad-btn w-14 h-14 sm:w-16 sm:h-16" aria-label="Move Right">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
       </button>
     </div>
 
     <!-- Right Action & Swim Cluster -->
     <div class="flex flex-col items-end gap-2.5 pointer-events-auto">
       <div id="touch-swim-cluster" class="hidden items-center gap-2.5">
-        <button id="touch-swim-up" class="touch-pad-btn w-12 h-12 text-[10px]">UP</button>
-        <button id="touch-swim-down" class="touch-pad-btn w-12 h-12 text-[10px]">DOWN</button>
+        <button id="touch-swim-up" class="touch-pad-btn w-12 h-12 text-[10px] border-sky-400">UP</button>
+        <button id="touch-swim-down" class="touch-pad-btn w-12 h-12 text-[10px] border-sky-400">DOWN</button>
       </div>
       <div class="flex items-center gap-2.5">
-        <button id="touch-crouch" class="touch-pad-btn w-13 h-13 sm:w-14 sm:h-14 text-[10px]">CROUCH</button>
-        <button id="touch-interact" class="touch-pad-btn w-14 h-14 sm:w-15 sm:h-15 text-[10px] border-amber-500/60">GRAB/USE</button>
-        <button id="touch-jump" class="touch-pad-btn w-15 h-15 sm:w-16 sm:h-16 text-xs border-sky-400/70">JUMP</button>
+        <button id="touch-crouch" class="touch-pad-btn w-14 h-14 text-[10px]">CROUCH</button>
+        <button id="touch-interact" class="touch-pad-btn w-14 h-14 text-[10px] border-amber-400">USE/GRAB</button>
+        <button id="touch-jump" class="touch-pad-btn w-15 h-15 sm:w-16 sm:h-16 text-xs border-sky-400">JUMP</button>
       </div>
     </div>
   </div>
@@ -1159,10 +1161,10 @@
         this.hazards = [];
         this.enemies = [];
         this.checkpoints = [];
-        this.secretObj = null;
-        this.particles = null;
-        this.checkpointPos = { x: 2, y: 1.2 };
+        this.checkpointPos = { x: 2, y: 2.05 };
         this.cameraShake = 0;
+        this.spawnGraceTimer = 0;
+        this.showOnScreenPad = true;
         this.lastTime = performance.now();
 
         this.setupInputs();
@@ -1343,158 +1345,79 @@
       // --------------------------------------------------------------------------
       // BUILD CHAPTER 3D WORLD
       // --------------------------------------------------------------------------
+      getSurfaceYAt(x, fallbackY = 2.0) {
+        let bestTop = null;
+        for (const p of this.platforms) {
+          if (x >= p.minX && x <= p.maxX && p.type !== 'low_ceiling') {
+            if (bestTop === null || p.maxY > bestTop) {
+              bestTop = p.maxY;
+            }
+          }
+        }
+        return bestTop !== null ? bestTop : fallbackY;
+      }
+
       buildChapter(chapterIndex, isMenuPreview = false) {
         this.currentChapterIdx = Math.max(0, Math.min(CHAPTERS.length - 1, chapterIndex));
         const cfg = CHAPTERS[this.currentChapterIdx];
-
-        while (this.levelGroup.children.length > 0) {
-          this.levelGroup.remove(this.levelGroup.children[0]);
-        }
-
-        this.platforms = [];
-        this.waterZones = [];
-        this.crates = [];
-        this.switches = [];
-        this.plates = [];
-        this.doors = [];
-        this.hazards = [];
-        this.enemies = [];
-        this.checkpoints = [];
-        this.secretObj = null;
-
-        this.scene.background = new THREE.Color(cfg.skyColor);
-        this.scene.fog = new THREE.FogExp2(cfg.fogColor, cfg.fogDensity);
-
-        // Clear, Atmospheric 3-Point Lighting
-        const ambient = new THREE.AmbientLight(cfg.ambientColor, 1.9);
-        this.levelGroup.add(ambient);
-
-        const hemi = new THREE.HemisphereLight(0xdbeafe, 0x1e293b, 1.0);
-        this.levelGroup.add(hemi);
-
-        const dirLight = new THREE.DirectionalLight(cfg.dirColor, 2.0);
-        dirLight.position.set(20, 30, 24);
-        dirLight.castShadow = this.persistence.settings.shadows;
-        dirLight.shadow.mapSize.set(1024, 1024);
-        dirLight.shadow.camera.near = 1;
-        dirLight.shadow.camera.far = 140;
-        dirLight.shadow.camera.left = -60;
-        dirLight.shadow.camera.right = 60;
-        dirLight.shadow.camera.top = 30;
-        dirLight.shadow.camera.bottom = -30;
-        this.levelGroup.add(dirLight);
-
-        const rimLight = new THREE.DirectionalLight(0x93c5fd, 0.9);
-        rimLight.position.set(-15, 14, -18);
-        this.levelGroup.add(rimLight);
-
-        // Depth Background Layers (Parallax Architectural Silhouettes)
-        const bgWallMat = new THREE.MeshStandardMaterial({ color: 0x0f1722, roughness: 0.95 });
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x182332, roughness: 0.85 });
-        const backWall = new THREE.Mesh(new THREE.PlaneGeometry(cfg.length + 60, 44), bgWallMat);
-        backWall.position.set(cfg.length / 2, 8, -12);
-        this.levelGroup.add(backWall);
-
-        for (let x = -10; x < cfg.length + 25; x += 9) {
-          const h = 14 + (Math.sin(x * 0.7) * 5);
-          const pillar = new THREE.Mesh(new THREE.BoxGeometry(2.4, h, 2.2), pillarMat);
-          pillar.position.set(x, h / 2 - 4, -5.5 - (x % 3));
-          this.levelGroup.add(pillar);
-        }
-
-        // Solid Platforms & Cover
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x263140, roughness: 0.85 });
-        const platMat = new THREE.MeshStandardMaterial({ color: 0x3b495c, roughness: 0.7 });
-        const coverMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.75 });
-
-        cfg.platforms.forEach((p) => {
-          const mat = p.type === 'ground' ? groundMat : (p.type === 'cover' ? coverMat : platMat);
-          const depth = p.type === 'cover' ? 1.4 : 4.2;
-          const zPos = p.type === 'cover' ? -0.9 : 0;
-          const mesh = new THREE.Mesh(new THREE.BoxGeometry(p.w, p.h, depth), mat);
-          mesh.position.set(p.x + p.w / 2, p.y + p.h / 2, zPos);
-          mesh.receiveShadow = true;
-          mesh.castShadow = true;
-          this.levelGroup.add(mesh);
-
-          if (p.type !== 'cover') {
-            this.platforms.push({
-              minX: p.x,
-              maxX: p.x + p.w,
-              minY: p.y,
-              maxY: p.y + p.h,
-              type: p.type
-            });
-          }
-        });
-
-        // Water Zones
-        const waterMat = new THREE.MeshStandardMaterial({
-          color: 0x0ea5e9,
-          transparent: true,
-          opacity: 0.42,
-          roughness: 0.15
-        });
-        cfg.waterZones.forEach((wz) => {
-          const mesh = new THREE.Mesh(new THREE.BoxGeometry(wz.w, wz.h, 4.4), waterMat);
-          mesh.position.set(wz.x + wz.w / 2, wz.y + wz.h / 2, 0.2);
-          this.levelGroup.add(mesh);
-          this.waterZones.push({
-            minX: wz.x,
-            maxX: wz.x + wz.w,
-            minY: wz.y,
-            maxY: wz.y + wz.h
-          });
-        });
-
+// ... existing code ... -->
         // Pushable/Pullable Crates
-        const crateMat = new THREE.MeshStandardMaterial({ color: 0x855832, roughness: 0.75 });
+        const crateMat = new THREE.MeshStandardMaterial({ color: 0x9a673a, roughness: 0.72 });
         cfg.crates.forEach((c) => {
+          const groundTop = this.getSurfaceYAt(c.x, 2.0);
+          const startY = Math.max(c.y, groundTop + c.h / 2 + 0.02);
           const mesh = new THREE.Mesh(new THREE.BoxGeometry(c.w, c.h, 1.5), crateMat);
-          mesh.position.set(c.x, c.y, 0);
+          mesh.position.set(c.x, startY, 0);
           mesh.castShadow = true;
           mesh.receiveShadow = true;
           this.levelGroup.add(mesh);
           this.crates.push({
             id: c.id,
-            x: c.x, y: c.y, vx: 0, vy: 0,
+            x: c.x, y: startY, vx: 0, vy: 0,
             w: c.w, h: c.h,
-            grounded: false,
+            grounded: true,
             mesh
           });
         });
 
         // Interactive Switches
         cfg.switches.forEach((sw) => {
+          const groundTop = this.getSurfaceYAt(sw.x, 2.0);
+          const swY = sw.y < groundTop ? groundTop + 0.5 : sw.y;
           const base = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 0.4), new THREE.MeshStandardMaterial({ color: 0x334155 }));
-          base.position.set(sw.x, sw.y, -0.4);
-          const orb = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
-          orb.position.set(sw.x, sw.y + 0.45, -0.35);
+          base.position.set(sw.x, swY, -0.4);
+          const orb = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+          orb.position.set(sw.x, swY + 0.48, -0.35);
           this.levelGroup.add(base, orb);
-          this.switches.push({ id: sw.id, x: sw.x, y: sw.y, targetDoor: sw.targetDoor, activated: false, orb });
+          this.switches.push({ id: sw.id, x: sw.x, y: swY, targetDoor: sw.targetDoor, activated: false, orb });
         });
 
         // Counterweight Pressure Plates
         cfg.plates.forEach((pl) => {
+          const groundTop = this.getSurfaceYAt(pl.x, 2.0);
+          const plY = Math.max(pl.y, groundTop + 0.11);
           const mesh = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.22, 1.6), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-          mesh.position.set(pl.x, pl.y, 0);
+          mesh.position.set(pl.x, plY, 0);
           this.levelGroup.add(mesh);
-          this.plates.push({ id: pl.id, x: pl.x, y: pl.y, targetDoor: pl.targetDoor, pressed: false, mesh });
+          this.plates.push({ id: pl.id, x: pl.x, y: plY, targetDoor: pl.targetDoor, pressed: false, mesh });
         });
 
         // Hydraulic Doors
         const doorMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.5, roughness: 0.4 });
         cfg.doors.forEach((d) => {
+          const groundTop = this.getSurfaceYAt(d.x, 2.0);
+          const baseY = d.y < 0 ? d.y : groundTop;
+          const openTargetY = d.y < 0 ? d.openY : groundTop + d.h - 0.3;
           const mesh = new THREE.Mesh(new THREE.BoxGeometry(d.w, d.h, 2.8), doorMat);
-          mesh.position.set(d.x, d.y + d.h / 2, 0);
+          mesh.position.set(d.x, baseY + d.h / 2, 0);
           mesh.castShadow = true;
           this.levelGroup.add(mesh);
           this.doors.push({
             id: d.id,
             x: d.x,
-            closedY: d.y,
-            openY: d.openY,
-            currentY: d.y,
+            closedY: baseY,
+            openY: openTargetY,
+            currentY: baseY,
             w: d.w,
             h: d.h,
             isOpen: false,
@@ -1504,65 +1427,74 @@
 
         // Hazards
         cfg.hazards.forEach((hz) => {
+          const groundTop = this.getSurfaceYAt(hz.x + hz.w / 2, 2.0);
+          const hzY = hz.type === 'abyss' ? -6.5 : (hz.y < 0 ? hz.y : groundTop + 0.25);
           if (hz.type !== 'abyss') {
             const color = hz.type === 'electric' ? 0x38bdf8 : 0xef4444;
             const mesh = new THREE.Mesh(
               new THREE.BoxGeometry(hz.w, hz.h, 2.0),
               new THREE.MeshBasicMaterial({ color })
             );
-            mesh.position.set(hz.x + hz.w / 2, hz.y, 0);
+            mesh.position.set(hz.x + hz.w / 2, hzY, 0);
             this.levelGroup.add(mesh);
           }
           this.hazards.push({
             minX: hz.x,
             maxX: hz.x + hz.w,
-            minY: hz.y - hz.h / 2,
-            maxY: hz.y + hz.h / 2,
+            minY: hzY - hz.h / 2,
+            maxY: hzY + hz.h / 2,
             type: hz.type
           });
         });
 
         // Checkpoints & Chapter Exit Beacon
         cfg.checkpoints.forEach((cp, i) => {
+          const groundTop = this.getSurfaceYAt(cp.x, 2.0);
+          const cpY = Math.max(cp.y, groundTop);
           const lamp = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.12, 1.8, 10),
-            new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.6 })
+            new THREE.CylinderGeometry(0.14, 0.14, 1.8, 10),
+            new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.7 })
           );
-          lamp.position.set(cp.x, cp.y + 0.4, -1.1);
+          lamp.position.set(cp.x, cpY + 0.9, -1.1);
           this.levelGroup.add(lamp);
-          this.checkpoints.push({ id: i, x: cp.x, y: cp.y + 0.5, triggered: false, lamp });
+          this.checkpoints.push({ id: i, x: cp.x, y: cpY + 0.05, triggered: false, lamp });
         });
 
         // Exit Gate Light
+        const exitGround = this.getSurfaceYAt(cfg.exitX, 2.0);
         const exitGate = new THREE.Mesh(
-          new THREE.BoxGeometry(1.2, 4.5, 3.2),
-          new THREE.MeshBasicMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.35 })
+          new THREE.BoxGeometry(1.4, 4.5, 3.2),
+          new THREE.MeshBasicMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.4 })
         );
-        exitGate.position.set(cfg.exitX, 2.25, 0);
+        exitGate.position.set(cfg.exitX, exitGround + 2.25, 0);
         this.levelGroup.add(exitGate);
 
         // Secret Collectible Orb
         if (cfg.secret) {
           const alreadyFound = this.persistence.saveData.secretsFound.includes(this.currentChapterIdx);
+          const groundTop = this.getSurfaceYAt(cfg.secret.x, 2.0);
+          const secY = cfg.secret.y < 0 ? cfg.secret.y : Math.max(cfg.secret.y, groundTop + 1.0);
           const sMesh = new THREE.Mesh(
-            new THREE.OctahedronGeometry(0.32, 0),
+            new THREE.OctahedronGeometry(0.35, 0),
             new THREE.MeshBasicMaterial({ color: alreadyFound ? 0x475569 : 0xfacc15 })
           );
-          sMesh.position.set(cfg.secret.x, cfg.secret.y, 0);
+          sMesh.position.set(cfg.secret.x, secY, 0);
           this.levelGroup.add(sMesh);
-          this.secretObj = { x: cfg.secret.x, y: cfg.secret.y, note: cfg.secret.note, collected: alreadyFound, mesh: sMesh };
+          this.secretObj = { x: cfg.secret.x, y: secY, note: cfg.secret.note, collected: alreadyFound, mesh: sMesh };
         }
 
         // Enemies
         cfg.enemies.forEach((em) => {
           const meta = ASSET_MANIFEST.enemies.find((e) => e.id === em.type) || ASSET_MANIFEST.enemies[0];
           const { group, coneMesh } = this.createEnemyMesh(meta);
-          group.position.set(em.x, em.y, 0);
+          const groundTop = this.getSurfaceYAt(em.x, 2.0);
+          const enY = meta.flying ? groundTop + 4.2 : (meta.aquatic ? em.y : groundTop);
+          group.position.set(em.x, enY, 0);
           this.levelGroup.add(group);
           this.enemies.push({
             meta,
             x: em.x,
-            y: em.y,
+            y: enY,
             patrolMin: em.patrolMin,
             patrolMax: em.patrolMax,
             dir: 1,
@@ -1586,18 +1518,12 @@
         const pMat = new THREE.PointsMaterial({
           color: cfg.weather === 'rain' ? 0x93c5fd : 0xcbd5e1,
           size: cfg.weather === 'rain' ? 0.08 : 0.11,
-          transparent: true,
-          opacity: 0.45
-        });
-        this.particles = new THREE.Points(pGeo, pMat);
-        this.particles.userData.weather = cfg.weather;
-        this.levelGroup.add(this.particles);
-
-        // Spawn Protagonist
+        // Spawn Protagonist safely on top of ground surface
         this.player.mesh = this.createProtagonistMesh();
         this.levelGroup.add(this.player.mesh);
 
-        this.checkpointPos = { x: cfg.spawn.x, y: cfg.spawn.y };
+        const safeSpawnY = this.getSurfaceYAt(cfg.spawn.x, 2.0) + 0.05;
+        this.checkpointPos = { x: cfg.spawn.x, y: safeSpawnY };
         this.resetPlayerToCheckpoint();
 
         if (!isMenuPreview) {
@@ -1607,14 +1533,20 @@
       }
 
       resetPlayerToCheckpoint() {
+        const safeY = this.getSurfaceYAt(this.checkpointPos.x, 2.0) + 0.05;
         this.player.x = this.checkpointPos.x;
-        this.player.y = this.checkpointPos.y;
+        this.player.y = Math.max(this.checkpointPos.y, safeY);
         this.player.vx = 0;
         this.player.vy = 0;
+        this.player.grounded = true;
         this.player.breath = 100;
         this.player.grabbedCrate = null;
         this.player.crouching = false;
         this.player.inWater = false;
+        this.spawnGraceTimer = 1.2;
+        if (this.player.mesh) {
+          this.player.mesh.position.set(this.player.x, this.player.y, 0);
+        }
         document.getElementById('cinematic-overlay').className = '';
         document.getElementById('breath-container').classList.add('hidden');
       }
@@ -1751,6 +1683,7 @@
 
       updateSimulation(dt) {
         const cfg = CHAPTERS[this.currentChapterIdx];
+        if (this.spawnGraceTimer > 0) this.spawnGraceTimer -= dt;
         this.pollGamepad();
 
         // Check Water Immersion
@@ -1878,10 +1811,16 @@
         this.updateEnemies(dt);
 
         // Hazards Check
-        for (const hz of this.hazards) {
-          if (this.player.x + 0.25 > hz.minX && this.player.x - 0.25 < hz.maxX &&
-              this.player.y + this.player.h > hz.minY && this.player.y < hz.maxY) {
-            this.triggerGameOver(hz.type === 'electric' ? 'HIGH-VOLTAGE DISCHARGE' : 'FATAL FALL');
+        if (this.spawnGraceTimer <= 0) {
+          for (const hz of this.hazards) {
+            if (this.player.x + 0.25 > hz.minX && this.player.x - 0.25 < hz.maxX &&
+                this.player.y + this.player.h > hz.minY && this.player.y < hz.maxY) {
+              this.triggerGameOver(hz.type === 'electric' ? 'HIGH-VOLTAGE DISCHARGE' : 'FATAL FALL');
+              return;
+            }
+          }
+          if (this.player.y < -9.5) {
+            this.triggerGameOver('LOST IN THE ABYSS');
             return;
           }
         }
@@ -2247,9 +2186,8 @@
       }
 
       updateTouchControlsVisibility() {
-        const isTouchOrSmall = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.innerWidth <= 1024;
         const el = document.getElementById('touch-controls');
-        if (isTouchOrSmall && this.state === 'PLAYING') {
+        if (this.showOnScreenPad && this.state === 'PLAYING') {
           el.classList.remove('hidden');
         } else {
           el.classList.add('hidden');
@@ -2349,6 +2287,10 @@
 
         document.getElementById('btn-menu-fullscreen').onclick = () => this.toggleFullscreen();
         document.getElementById('btn-menu-mute').onclick = () => this.toggleMute();
+        document.getElementById('btn-hud-touch-toggle').onclick = () => {
+          this.showOnScreenPad = !this.showOnScreenPad;
+          this.updateTouchControlsVisibility();
+        };
         document.getElementById('btn-hud-audio').onclick = () => this.toggleMute();
         document.getElementById('btn-hud-fullscreen').onclick = () => this.toggleFullscreen();
         document.getElementById('btn-hud-pause').onclick = () => this.pauseGame();
