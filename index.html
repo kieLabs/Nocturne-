@@ -1,0 +1,3163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="description" content="NOCTURNE – BEYOND THE SILENT WORLD by GamerKie. Run. Hide. Swim. Survive. Discover the Truth." />
+  <title>NOCTURNE – BEYOND THE SILENT WORLD | GAMERKIE</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      margin: 0;
+      padding: 0;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #06090d;
+      color: #d8e1e8;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, sans-serif;
+      touch-action: none;
+    }
+    #game-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+    /* Cinematic Film Grain & Vignette Overlay */
+    #cinematic-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 5;
+      background: radial-gradient(circle at center, transparent 48%, rgba(2, 4, 7, 0.85) 100%);
+      transition: background 0.6s ease;
+    }
+    #cinematic-overlay.underwater {
+      background: radial-gradient(circle at center, rgba(10, 48, 66, 0.18) 35%, rgba(2, 16, 26, 0.92) 100%);
+    }
+    #cinematic-overlay.danger {
+      background: radial-gradient(circle at center, rgba(120, 15, 15, 0.15) 40%, rgba(45, 4, 4, 0.88) 100%);
+    }
+    #fade-curtain {
+      position: fixed;
+      inset: 0;
+      background: #030508;
+      pointer-events: none;
+      z-index: 40;
+      opacity: 1;
+      transition: opacity 0.85s ease-in-out;
+    }
+    /* Custom Scrollbar for Menus */
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 32, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.35);
+      border-radius: 3px;
+    }
+    .menu-btn {
+      position: relative;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .menu-btn:hover, .menu-btn:focus {
+      letter-spacing: 0.28em;
+      color: #ffffff;
+      text-shadow: 0 0 14px rgba(186, 230, 253, 0.55);
+      transform: translateX(4px);
+    }
+    .menu-btn::before {
+      content: '';
+      position: absolute;
+      left: -14px;
+      top: 50%;
+      width: 6px;
+      height: 1px;
+      background: #94a3b8;
+      opacity: 0;
+      transition: opacity 0.2s ease, width 0.2s ease;
+    }
+    .menu-btn:hover::before {
+      opacity: 1;
+      width: 10px;
+    }
+    .touch-pad-btn {
+      background: rgba(15, 23, 34, 0.52);
+      border: 1px solid rgba(148, 163, 184, 0.28);
+      backdrop-filter: blur(4px);
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(226, 232, 240, 0.85);
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      transition: transform 0.08s ease, background 0.1s ease, border-color 0.1s ease;
+    }
+    .touch-pad-btn.active, .touch-pad-btn:active {
+      background: rgba(56, 189, 248, 0.32);
+      border-color: rgba(125, 211, 252, 0.8);
+      transform: scale(0.93);
+      color: #ffffff;
+    }
+    /* Portrait orientation warning on mobile */
+    #rotate-overlay {
+      display: none;
+    }
+    @media screen and (max-width: 820px) and (orientation: portrait) {
+      #rotate-overlay {
+        display: flex;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- 3D WebGL Viewport -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Atmospheric Vignette & Underwater Tint -->
+  <div id="cinematic-overlay"></div>
+
+  <!-- Fade Curtain for Chapter & Respawn Transitions -->
+  <div id="fade-curtain"></div>
+
+  <!-- Portrait Orientation Warning for Mobile -->
+  <div id="rotate-overlay" class="fixed inset-0 z-50 bg-[#05080c] flex-col items-center justify-center p-6 text-center">
+    <div class="w-16 h-16 mb-5 border-2 border-slate-500 rounded-xl flex items-center justify-center animate-pulse">
+      <svg class="w-8 h-8 text-slate-300 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <rect x="5" y="2" width="14" height="20" rx="2" stroke-width="1.5"/>
+        <circle cx="12" cy="18" r="1" fill="currentColor"/>
+      </svg>
+    </div>
+    <h2 class="text-lg tracking-[0.25em] uppercase text-slate-200 font-light mb-2">Rotate Device</h2>
+    <p class="text-xs text-slate-400 max-w-xs leading-relaxed">NOCTURNE requires landscape orientation for cinematic 2.5D framing and touch controls.</p>
+  </div>
+
+  <!-- INITIAL LOADING SCREEN -->
+  <div id="loading-screen" class="fixed inset-0 z-30 bg-[#05080c] flex flex-col items-center justify-center p-6 transition-opacity duration-700">
+    <div class="text-[11px] tracking-[0.45em] text-slate-500 uppercase mb-3">GAMERKIE ORIGINAL</div>
+    <h1 class="text-2xl sm:text-4xl md:text-5xl font-extralight tracking-[0.3em] text-slate-100 uppercase text-center mb-2">NOCTURNE</h1>
+    <p class="text-xs sm:text-sm tracking-[0.35em] text-slate-400 uppercase mb-10 text-center">Beyond The Silent World</p>
+    <div class="w-64 sm:w-80 h-[2px] bg-slate-800 overflow-hidden mb-3">
+      <div id="loading-bar" class="h-full bg-slate-300 w-0 transition-all duration-200"></div>
+    </div>
+    <div class="flex justify-between w-64 sm:w-80 text-[10px] tracking-[0.2em] text-slate-500 uppercase">
+      <span id="loading-status">AUDITING GLB MANIFEST...</span>
+      <span id="loading-percent">0%</span>
+    </div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div id="main-menu" class="hidden fixed inset-0 z-20 flex flex-col justify-between p-6 sm:p-12 md:p-16 bg-gradient-to-r from-[#04070b]/95 via-[#04070b]/70 to-transparent">
+    <div>
+      <div class="flex items-center gap-3 mb-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-600/80 animate-pulse"></span>
+        <span class="text-[10px] sm:text-xs tracking-[0.42em] text-slate-400 uppercase">GAMERKIE INTERACTIVE</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl md:text-6xl font-extralight tracking-[0.28em] text-slate-100 uppercase">NOCTURNE</h1>
+      <p class="text-xs sm:text-sm tracking-[0.34em] text-slate-400 uppercase mt-1">Beyond The Silent World</p>
+      <p class="text-[10px] tracking-[0.25em] text-slate-500 uppercase mt-3">RUN. HIDE. SWIM. SURVIVE. DISCOVER THE TRUTH.</p>
+    </div>
+
+    <div class="flex flex-col items-start gap-2.5 sm:gap-3.5 my-auto py-4">
+      <button id="btn-play" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Play</button>
+      <button id="btn-continue" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Continue</button>
+      <button id="btn-newgame" class="menu-btn text-sm sm:text-base text-slate-200 py-1">New Game</button>
+      <button id="btn-chapters" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Chapter Select</button>
+      <button id="btn-settings" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Settings</button>
+      <button id="btn-controls" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Controls</button>
+      <button id="btn-extras" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Extras &amp; GLB Audit</button>
+      <button id="btn-credits" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Credits</button>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-between gap-4 text-[10px] tracking-[0.2em] text-slate-500 uppercase">
+      <span id="save-status-label">NO SAVED PROGRESS</span>
+      <div class="flex items-center gap-4">
+        <button id="btn-menu-fullscreen" class="hover:text-slate-200 transition-colors">[F] FULLSCREEN</button>
+        <button id="btn-menu-mute" class="hover:text-slate-200 transition-colors">[M] AUDIO: ON</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CONTAINER (Confirmations, Chapter Select, Settings, Controls, Extras, Credits) -->
+  <div id="menu-modal" class="hidden fixed inset-0 z-30 bg-[#03060a]/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8">
+    <div class="w-full max-w-3xl max-h-[88vh] bg-[#090e15] border border-slate-800/90 rounded-lg shadow-2xl flex flex-col overflow-hidden">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-800/80">
+        <h2 id="modal-title" class="text-sm sm:text-base tracking-[0.28em] uppercase text-slate-200 font-light">TITLE</h2>
+        <button id="btn-close-modal" class="text-xs tracking-[0.2em] uppercase text-slate-400 hover:text-white px-3 py-1 border border-slate-700/70 rounded">CLOSE [ESC]</button>
+      </div>
+      <div id="modal-body" class="p-6 overflow-y-auto space-y-5 text-xs sm:text-sm text-slate-300 leading-relaxed"></div>
+    </div>
+  </div>
+
+  <!-- IN-GAME CINEMATIC HUD -->
+  <div id="game-hud" class="hidden fixed inset-0 z-10 pointer-events-none flex flex-col justify-between p-4 sm:p-6">
+    <!-- Top Bar -->
+    <div class="flex items-start justify-between">
+      <div>
+        <div id="hud-chapter-num" class="text-[10px] tracking-[0.35em] text-slate-400 uppercase">CHAPTER 01</div>
+        <div id="hud-chapter-title" class="text-sm sm:text-lg font-light tracking-[0.22em] text-slate-100 uppercase">THE FORGOTTEN FOREST</div>
+        <div id="hud-checkpoint-toast" class="opacity-0 transition-opacity duration-500 text-[10px] tracking-[0.25em] text-sky-300/80 uppercase mt-1 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span> CHECKPOINT SAVED
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 pointer-events-auto">
+        <div class="hidden sm:flex items-center gap-3 mr-3 text-[10px] tracking-[0.2em] text-slate-400 uppercase">
+          <span id="hud-secrets-count">SECRETS: 0/12</span>
+        </div>
+        <button id="btn-hud-audio" class="px-2.5 py-1.5 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/60 rounded text-[10px] tracking-[0.18em] text-slate-300 uppercase" title="Mute/Unmute [M]">SFX</button>
+        <button id="btn-hud-fullscreen" class="px-2.5 py-1.5 bg-slate-900/60 hover:bg-slate-800/80 border border-slate-700/60 rounded text-[10px] tracking-[0.18em] text-slate-300 uppercase" title="Fullscreen [F]">FULL</button>
+        <button id="btn-hud-pause" class="px-3 py-1.5 bg-slate-900/75 hover:bg-slate-800 border border-slate-600/70 rounded text-[10px] tracking-[0.22em] text-slate-100 uppercase">PAUSE</button>
+      </div>
+    </div>
+
+    <!-- Center Narrative / Chapter Title Banner -->
+    <div id="chapter-banner" class="opacity-0 transition-opacity duration-1000 self-center text-center pointer-events-none my-auto">
+      <div id="banner-sub" class="text-[10px] sm:text-xs tracking-[0.45em] text-slate-400 uppercase mb-2">CHAPTER 01</div>
+      <div id="banner-main" class="text-xl sm:text-3xl md:text-4xl font-extralight tracking-[0.32em] text-slate-100 uppercase">THE FORGOTTEN FOREST</div>
+      <div id="banner-desc" class="text-xs tracking-[0.18em] text-slate-400 mt-3 max-w-md mx-auto"></div>
+    </div>
+
+    <!-- Bottom Contextual Hints & Underwater Breath Meter -->
+    <div class="flex flex-col items-center gap-2 mb-16 sm:mb-2">
+      <!-- Underwater Breath Gauge -->
+      <div id="breath-container" class="hidden flex-col items-center gap-1 w-48 sm:w-64">
+        <div class="text-[9px] tracking-[0.3em] text-sky-300/90 uppercase">OXYGEN</div>
+        <div class="w-full h-1.5 bg-slate-900/90 border border-sky-900/70 rounded-full overflow-hidden">
+          <div id="breath-bar" class="h-full bg-gradient-to-r from-red-500 via-sky-400 to-cyan-200 w-full transition-all duration-100"></div>
+        </div>
+      </div>
+      <!-- Contextual Interaction Prompt -->
+      <div id="interact-hint" class="opacity-0 transition-opacity duration-200 px-3.5 py-1 bg-slate-950/80 border border-slate-700/70 rounded-full text-[10px] tracking-[0.22em] text-slate-200 uppercase">
+        [E] INTERACT
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE LANDSCAPE TOUCH CONTROLS -->
+  <div id="touch-controls" class="hidden fixed inset-0 z-15 pointer-events-none flex items-end justify-between p-4 sm:p-6">
+    <!-- Left Movement Cluster -->
+    <div class="flex items-center gap-3 pointer-events-auto">
+      <button id="touch-left" class="touch-pad-btn w-14 h-14 sm:w-16 sm:h-16" aria-label="Move Left">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <button id="touch-right" class="touch-pad-btn w-14 h-14 sm:w-16 sm:h-16" aria-label="Move Right">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+
+    <!-- Right Action & Swim Cluster -->
+    <div class="flex flex-col items-end gap-2.5 pointer-events-auto">
+      <div id="touch-swim-cluster" class="hidden items-center gap-2.5">
+        <button id="touch-swim-up" class="touch-pad-btn w-12 h-12 text-[10px]">UP</button>
+        <button id="touch-swim-down" class="touch-pad-btn w-12 h-12 text-[10px]">DOWN</button>
+      </div>
+      <div class="flex items-center gap-2.5">
+        <button id="touch-crouch" class="touch-pad-btn w-12 h-12 sm:w-14 sm:h-14 text-[10px]">CROUCH</button>
+        <button id="touch-interact" class="touch-pad-btn w-13 h-13 sm:w-15 sm:h-15 text-[10px] border-amber-500/40">GRAB/USE</button>
+        <button id="touch-jump" class="touch-pad-btn w-14 h-14 sm:w-16 sm:h-16 text-xs border-sky-400/50">JUMP</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAUSE MENU -->
+  <div id="pause-menu" class="hidden fixed inset-0 z-25 bg-[#030508]/85 backdrop-blur-sm flex flex-col items-center justify-center p-6">
+    <div class="text-[10px] tracking-[0.4em] text-slate-500 uppercase mb-2">SIMULATION SUSPENDED</div>
+    <h2 class="text-2xl sm:text-4xl font-extralight tracking-[0.3em] text-slate-100 uppercase mb-8">PAUSED</h2>
+    <div class="flex flex-col items-center gap-3.5">
+      <button id="btn-pause-resume" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Resume</button>
+      <button id="btn-pause-restart" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Restart Checkpoint</button>
+      <button id="btn-pause-settings" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Settings</button>
+      <button id="btn-pause-controls" class="menu-btn text-sm sm:text-base text-slate-200 py-1">Controls</button>
+      <button id="btn-pause-mainmenu" class="menu-btn text-sm sm:text-base text-red-300/90 py-1 mt-2">Main Menu</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameover-screen" class="hidden fixed inset-0 z-25 bg-[#070203]/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+    <div id="death-reason" class="text-[10px] tracking-[0.4em] text-red-400/80 uppercase mb-2">SIGNAL TERMINATED</div>
+    <h2 class="text-2xl sm:text-4xl font-extralight tracking-[0.3em] text-slate-100 uppercase mb-8">YOU DID NOT SURVIVE</h2>
+    <div class="flex flex-col items-center gap-3.5">
+      <button id="btn-gameover-restart" class="menu-btn text-sm sm:text-base text-slate-100 py-1">Restart Checkpoint [R]</button>
+      <button id="btn-gameover-mainmenu" class="menu-btn text-sm sm:text-base text-slate-400 py-1">Main Menu</button>
+    </div>
+  </div>
+
+  <!-- FINAL ENDING & CREDITS SCREEN -->
+  <div id="ending-screen" class="hidden fixed inset-0 z-35 bg-[#03060a] flex flex-col items-center justify-center p-6 text-center overflow-y-auto">
+    <div class="max-w-xl space-y-6 my-auto">
+      <div class="text-[10px] tracking-[0.45em] text-sky-400/80 uppercase">TRANSMISSION COMPLETE</div>
+      <h2 class="text-2xl sm:text-4xl font-extralight tracking-[0.28em] text-slate-100 uppercase">BEYOND THE SILENT WORLD</h2>
+      <p class="text-xs sm:text-sm text-slate-300 leading-relaxed font-light">
+        Beyond the flooded containment chambers and the silent assembly halls, the perimeter gates give way to open mist.
+        The Synchronization Project remains behind in the dark—while the child steps into the unknown horizon.
+      </p>
+      <div id="ending-stats" class="grid grid-cols-2 gap-4 py-4 border-y border-slate-800 text-xs tracking-[0.2em] text-slate-400 uppercase"></div>
+      <div class="text-[11px] tracking-[0.22em] text-slate-500 uppercase space-y-1 pt-2">
+        <div>CREATED BY GAMERKIE STUDIO</div>
+        <div>POWERED BY THREE.JS &amp; CUSTOM GLB PIPELINE</div>
+      </div>
+      <div class="flex flex-wrap justify-center gap-4 pt-4">
+        <button id="btn-end-newgame" class="px-5 py-2.5 bg-slate-100 text-slate-950 text-xs tracking-[0.25em] uppercase font-semibold rounded hover:bg-white">New Game</button>
+        <button id="btn-end-chapters" class="px-5 py-2.5 border border-slate-700 text-slate-200 text-xs tracking-[0.25em] uppercase rounded hover:border-slate-400">Chapter Select</button>
+        <button id="btn-end-mainmenu" class="px-5 py-2.5 border border-slate-700 text-slate-400 text-xs tracking-[0.25em] uppercase rounded hover:text-white">Main Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * ============================================================================
+     * NOCTURNE – BEYOND THE SILENT WORLD (GAMERKIE ORIGINAL)
+     * Complete 2.5D Cinematic Adventure Engine (Three.js + GLTFLoader + WebAudio)
+     * ============================================================================
+     */
+
+    // ----------------------------------------------------------------------------
+    // 1. ASSET MANIFEST & 12-DESIGN / ENEMY GLB AUDIT REGISTRY
+    // ----------------------------------------------------------------------------
+    const ASSET_MANIFEST = {
+      player: [
+        {
+          id: 'hero_01',
+          filename: '01_HERO_RedShirt_Child.glb',
+          altFilename: 'hero_01_red_shirt_runner.glb',
+          category: 'Player',
+          displayName: 'Protagonist (Red Shirt Child)',
+          path: 'public/models/player/01_HERO_RedShirt_Child.glb',
+          animations: ['Idle', 'Walk', 'Run', 'Jump', 'Crouch', 'Swim', 'PushPull'],
+          scale: [1, 1, 1],
+          rotation: [0, Math.PI / 2, 0],
+          chapter: 'All Chapters (01–12)',
+          role: 'Playable 2.5D Protagonist'
+        },
+        {
+          id: 'hero_02',
+          filename: 'hero_02_blue_hooded_runner.glb',
+          category: 'Player Variant',
+          displayName: 'Protagonist Variant (Blue Hooded)',
+          path: 'public/models/player/hero_02_blue_hooded_runner.glb',
+          animations: ['Idle', 'Walk', 'Run', 'Jump'],
+          scale: [1, 1, 1],
+          rotation: [0, Math.PI / 2, 0],
+          chapter: 'Unlockable / Extras',
+          role: 'Alternate Protagonist Skin'
+        }
+      ],
+      enemies: [
+        {
+          id: 'enemy_warden',
+          filename: '03_ENEMY_Searchlight_Warden.glb',
+          category: 'Enemy - Guard',
+          displayName: 'Searchlight Warden',
+          path: 'public/models/enemies/03_ENEMY_Searchlight_Warden.glb',
+          role: 'Flashlight Patrol & Line-of-Sight Guard',
+          chapter: 'Ch 01, 04, 05, 12',
+          speed: 3.1,
+          visionRange: 10.5,
+          visionAngle: 0.45,
+          hasLight: true,
+          aquatic: false
+        },
+        {
+          id: 'enemy_hound',
+          filename: '04_ENEMY_Hunter_Hound.glb',
+          category: 'Enemy - Hunter',
+          displayName: 'Hunter Hound',
+          path: 'public/models/enemies/04_ENEMY_Hunter_Hound.glb',
+          role: 'High-Speed Sound & Sight Pursuer',
+          chapter: 'Ch 01, 06, 10',
+          speed: 5.6,
+          visionRange: 9.0,
+          visionAngle: 0.55,
+          hasLight: false,
+          aquatic: false
+        },
+        {
+          id: 'enemy_diver',
+          filename: '02_ENEMY_Flooded_Diver.glb',
+          category: 'Enemy - Aquatic',
+          displayName: 'Flooded Diver / Deep Subject',
+          path: 'public/models/enemies/02_ENEMY_Flooded_Diver.glb',
+          role: 'Submerged Pursuit Predator',
+          chapter: 'Ch 02, 07, 11',
+          speed: 3.8,
+          visionRange: 8.5,
+          visionAngle: 0.65,
+          hasLight: true,
+          aquatic: true
+        },
+        {
+          id: 'enemy_crawler',
+          filename: '05_ENEMY_Crawling_Experiment.glb',
+          category: 'Enemy - Stalker',
+          displayName: 'Crawling Experiment',
+          path: 'public/models/enemies/05_ENEMY_Crawling_Experiment.glb',
+          role: 'Low-Profile Vent & Chamber Ambush',
+          chapter: 'Ch 05, 09, 11',
+          speed: 4.3,
+          visionRange: 7.5,
+          visionAngle: 0.5,
+          hasLight: false,
+          aquatic: false
+        },
+        {
+          id: 'enemy_sentinel',
+          filename: '06_ENEMY_Security_Sentinel.glb',
+          category: 'Enemy - Drone',
+          displayName: 'Security Sentinel Drone',
+          path: 'public/models/enemies/06_ENEMY_Security_Sentinel.glb',
+          role: 'Aerial Sweeping Searchlight Scanner',
+          chapter: 'Ch 04, 08, 10, 12',
+          speed: 2.8,
+          visionRange: 11.0,
+          visionAngle: 0.4,
+          hasLight: true,
+          aquatic: false,
+          flying: true
+        },
+        {
+          id: 'enemy_stalker',
+          filename: '07_ENEMY_Cable_Stalker.glb',
+          category: 'Enemy - Heavy',
+          displayName: 'Cable Stalker / Iron Patroller',
+          path: 'public/models/enemies/07_ENEMY_Cable_Stalker.glb',
+          role: 'Heavy Mechanical Corridor Enforcer',
+          chapter: 'Ch 08, 10, 12',
+          speed: 2.5,
+          visionRange: 9.5,
+          visionAngle: 0.42,
+          hasLight: true,
+          aquatic: false
+        },
+        {
+          id: 'enemy_husk',
+          filename: '08_ENEMY_Husk_Worker.glb',
+          category: 'Character / Background',
+          displayName: 'Husk Worker',
+          path: 'public/models/enemies/08_ENEMY_Husk_Worker.glb',
+          role: 'Synchronized Facility Worker / Observer',
+          chapter: 'Ch 08, 12',
+          speed: 1.6,
+          visionRange: 5.5,
+          visionAngle: 0.35,
+          hasLight: false,
+          aquatic: false
+        }
+      ],
+      environments: [
+        { design: 'Design 01', filename: '09_BACKGROUND_01_misty_submerged_reed_field.glb', category: 'Environment', use: 'Misty Forest & Perimeter Reeds', chapter: 'Chapter 01', status: 'Integrated' },
+        { design: 'Design 02', filename: '10_BACKGROUND_02_boarded_timber_gate_warehouse.glb', category: 'Environment', use: 'Boarded Timber Barricade Warehouse', chapter: 'Chapter 03', status: 'Integrated' },
+        { design: 'Design 03', filename: '11_BACKGROUND_03_searchlight_industrial_hall.glb', category: 'Environment', use: 'Watchtower Searchlight Industrial Hall', chapter: 'Chapter 04', status: 'Integrated' },
+        { design: 'Design 04', filename: '12_BACKGROUND_04_glass_research_facility_exterior.glb', category: 'Environment', use: 'Glass Observation Research Wing', chapter: 'Chapter 05', status: 'Integrated' },
+        { design: 'Design 05', filename: '13_BACKGROUND_05_broken_platform_over_void.glb', category: 'Environment', use: 'Broken Elevated Overpass & Void', chapter: 'Chapter 06', status: 'Integrated' },
+        { design: 'Design 06', filename: '14_BACKGROUND_06_huge_doorway_crowd_chamber.glb', category: 'Environment', use: 'Silent Workers Assembly Chamber', chapter: 'Chapter 08', status: 'Integrated' },
+        { design: 'Design 07', filename: '15_BACKGROUND_07_flooded_sewer_tunnel.glb', category: 'Environment', use: 'Flooded Transit & Sewer Tunnels', chapter: 'Chapter 07', status: 'Integrated' },
+        { design: 'Design 08', filename: '16_BACKGROUND_08_dead_forest_perimeter.glb', category: 'Environment', use: 'Drowned Basin & Dead Forest Edge', chapter: 'Chapter 02', status: 'Integrated' },
+        { design: 'Design 09', filename: '17_BACKGROUND_09_underground_concrete_bunker.glb', category: 'Environment', use: 'Ventilation & Concrete Bunker', chapter: 'Chapter 09', status: 'Integrated' },
+        { design: 'Design 10', filename: '18_BACKGROUND_10_factory_conveyor_corridor.glb', category: 'Environment', use: 'Industrial Descent & Conveyor Shaft', chapter: 'Chapter 10', status: 'Integrated' },
+        { design: 'Design 11', filename: '19_BACKGROUND_11_observation_laboratory.glb', category: 'Environment', use: 'Silent Reservoir Research Lab', chapter: 'Chapter 11', status: 'Integrated' },
+        { design: 'Design 12', filename: '20_BACKGROUND_12_exterior_escape_bridge.glb', category: 'Environment', use: 'Final Facility & Exterior Escape Bridge', chapter: 'Chapter 12', status: 'Integrated' }
+      ]
+    };
+
+    // ----------------------------------------------------------------------------
+    // 2. PROCEDURAL ATMOSPHERIC WEB AUDIO SYSTEM (Zero external broken audio links)
+    // ----------------------------------------------------------------------------
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.muted = false;
+        this.masterVol = 0.8;
+        this.musicVol = 0.6;
+        this.sfxVol = 0.85;
+        this.ambientGain = null;
+        this.droneOsc = null;
+        this.lfoOsc = null;
+        this.initialized = false;
+      }
+
+      init() {
+        if (this.initialized) return;
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioCtx();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.value = this.muted ? 0 : this.masterVol;
+          this.masterGain.connect(this.ctx.destination);
+
+          // Dark cinematic ambient sub-drone
+          this.ambientGain = this.ctx.createGain();
+          this.ambientGain.gain.value = 0.14 * this.musicVol;
+          this.ambientGain.connect(this.masterGain);
+
+          this.droneOsc = this.ctx.createOscillator();
+          this.droneOsc.type = 'sawtooth';
+          this.droneOsc.frequency.value = 46.25; // F#1 deep atmospheric hum
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'lowpass';
+          filter.frequency.value = 135;
+
+          this.lfoOsc = this.ctx.createOscillator();
+          this.lfoOsc.frequency.value = 0.12;
+          const lfoGain = this.ctx.createGain();
+          lfoGain.gain.value = 35;
+          this.lfoOsc.connect(lfoGain);
+          lfoGain.connect(filter.frequency);
+
+          this.droneOsc.connect(filter);
+          filter.connect(this.ambientGain);
+
+          this.droneOsc.start();
+          this.lfoOsc.start();
+          this.initialized = true;
+        } catch (e) {
+          console.warn('WebAudio unavailable:', e);
+        }
+      }
+
+      resume() {
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      updateVolumes(master, music, sfx, muted) {
+        this.masterVol = master;
+        this.musicVol = music;
+        this.sfxVol = sfx;
+        this.muted = muted;
+        if (this.masterGain && this.ctx) {
+          this.masterGain.gain.setTargetAtTime(this.muted ? 0 : this.masterVol, this.ctx.currentTime, 0.05);
+        }
+        if (this.ambientGain && this.ctx) {
+          this.ambientGain.gain.setTargetAtTime(0.14 * this.musicVol, this.ctx.currentTime, 0.05);
+        }
+      }
+
+      playTone(freq, type, duration, vol = 0.25, slideTo = null) {
+        if (!this.initialized || this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, now);
+        if (slideTo) {
+          osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+        }
+        gain.gain.setValueAtTime(vol * this.sfxVol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        osc.connect(gain);
+        gain.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + duration);
+      }
+
+      playNoise(duration, filterFreq, vol = 0.2, filterType = 'bandpass') {
+        if (!this.initialized || this.muted || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = filterType;
+        filter.frequency.value = filterFreq;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(vol * this.sfxVol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterGain);
+        noise.start(now);
+      }
+
+      playStep(inWater = false) {
+        if (inWater) {
+          this.playNoise(0.16, 480, 0.14, 'lowpass');
+        } else {
+          this.playNoise(0.07, 240, 0.08, 'lowpass');
+        }
+      }
+
+      playJump() {
+        this.playTone(130, 'sine', 0.18, 0.14, 210);
+      }
+
+      playLand() {
+        this.playNoise(0.12, 140, 0.18, 'lowpass');
+      }
+
+      playSwitch() {
+        this.playTone(320, 'triangle', 0.12, 0.22, 540);
+      }
+
+      playDoor() {
+        this.playTone(95, 'sawtooth', 0.55, 0.18, 55);
+      }
+
+      playSplash() {
+        this.playNoise(0.45, 620, 0.28, 'bandpass');
+      }
+
+      playAlert() {
+        this.playTone(220, 'sawtooth', 0.35, 0.25, 110);
+      }
+
+      playDeath() {
+        this.playTone(110, 'sawtooth', 0.75, 0.35, 34);
+        this.playNoise(0.5, 180, 0.3, 'lowpass');
+      }
+
+      playCheckpoint() {
+        this.playTone(330, 'sine', 0.4, 0.15, 495);
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 3. SAVE & SETTINGS PERSISTENCE MANAGER
+    // ----------------------------------------------------------------------------
+    const STORAGE_KEY = 'gamerkie_nocturne_save_v1';
+    const SETTINGS_KEY = 'gamerkie_nocturne_settings_v1';
+
+    class PersistenceManager {
+      constructor() {
+        this.defaultSave = {
+          hasSave: false,
+          currentChapter: 0, // 0-indexed (0..11)
+          unlockedChapters: 1, // 1..12
+          checkpointX: 2,
+          checkpointY: 1.5,
+          secretsFound: [], // array of chapter indices
+          deaths: 0,
+          completedGame: false
+        };
+        this.defaultSettings = {
+          masterVolume: 0.8,
+          musicVolume: 0.6,
+          sfxVolume: 0.85,
+          brightness: 1.0,
+          graphicsQuality: 'HIGH', // LOW, MEDIUM, HIGH, ULTRA
+          shadows: true,
+          cameraShake: true,
+          heroVariant: 'hero_01'
+        };
+        this.saveData = this.loadSave();
+        this.settings = this.loadSettings();
+      }
+
+      loadSave() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) return { ...this.defaultSave, ...JSON.parse(raw) };
+        } catch (e) {}
+        return { ...this.defaultSave };
+      }
+
+      writeSave() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.saveData));
+        } catch (e) {}
+      }
+
+      resetSave() {
+        this.saveData = { ...this.defaultSave, hasSave: true, unlockedChapters: 1 };
+        this.writeSave();
+      }
+
+      loadSettings() {
+        try {
+          const raw = localStorage.getItem(SETTINGS_KEY);
+          if (raw) return { ...this.defaultSettings, ...JSON.parse(raw) };
+        } catch (e) {}
+        return { ...this.defaultSettings };
+      }
+
+      writeSettings() {
+        try {
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
+        } catch (e) {}
+      }
+
+      resetSettings() {
+        this.settings = { ...this.defaultSettings };
+        this.writeSettings();
+      }
+    }
+
+    // ----------------------------------------------------------------------------
+    // 4. 12 FULL CHAPTER BLUEPRINTS (Continuous Story & Unique Mechanics)
+    // ----------------------------------------------------------------------------
+    const CHAPTERS = [
+      {
+        num: '01',
+        title: 'THE FORGOTTEN FOREST',
+        subtitle: 'Perimeter Reeds & Rain',
+        desc: 'Awaken in the storm-swept woods. Stay low behind fallen timber and evade perimeter searchlights.',
+        glbFile: '09_BACKGROUND_01_misty_submerged_reed_field.glb',
+        skyColor: 0x091119,
+        fogColor: 0x0b1520,
+        fogDensity: 0.032,
+        ambientColor: 0x263849,
+        dirColor: 0x7aa2c4,
+        weather: 'rain',
+        spawn: { x: 2, y: 1.2 },
+        length: 88,
+        platforms: [
+          { x: -4, y: -2, w: 30, h: 4, type: 'ground' },
+          { x: 28, y: -2, w: 22, h: 4, type: 'ground' }, // gap at 26..28
+          { x: 52, y: -2, w: 42, h: 4, type: 'ground' }, // gap at 50..52
+          { x: 14, y: 0.5, w: 3.5, h: 1.2, type: 'cover' }, // hide behind log
+          { x: 35, y: 0.8, w: 4.5, h: 1.6, type: 'cover' },
+          { x: 64, y: 1.2, w: 5, h: 0.6, type: 'platform' },
+          { x: 74, y: 2.2, w: 6, h: 0.6, type: 'platform' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c1_box', x: 59, y: 0.7, w: 1.3, h: 1.3 }
+        ],
+        switches: [],
+        plates: [],
+        doors: [],
+        hazards: [
+          { x: 27, y: -1.8, w: 2, h: 1.5, type: 'abyss' },
+          { x: 51, y: -1.8, w: 2, h: 1.5, type: 'abyss' }
+        ],
+        enemies: [
+          { type: 'enemy_warden', x: 21, y: 0, patrolMin: 16, patrolMax: 24 },
+          { type: 'enemy_hound', x: 45, y: 0, patrolMin: 38, patrolMax: 48 }
+        ],
+        checkpoints: [{ x: 32, y: 0.5 }, { x: 56, y: 0.5 }],
+        secret: { x: 76, y: 3.2, note: 'Perimeter Log #01: Subjects are moved underground after midnight.' },
+        exitX: 86
+      },
+      {
+        num: '02',
+        title: 'THE DROWNED BASIN',
+        subtitle: 'Submerged Dead Forest',
+        desc: 'Descend into the flooded basin. Manage oxygen pockets and evade deep-water divers.',
+        glbFile: '16_BACKGROUND_08_dead_forest_perimeter.glb',
+        skyColor: 0x06131a,
+        fogColor: 0x081a24,
+        fogDensity: 0.036,
+        ambientColor: 0x1e4356,
+        dirColor: 0x56a3c7,
+        weather: 'mist',
+        spawn: { x: 2, y: 2.5 },
+        length: 92,
+        platforms: [
+          { x: -4, y: -1, w: 14, h: 4, type: 'ground' },
+          { x: 10, y: -6, w: 66, h: 2, type: 'ground' }, // deep underwater floor
+          { x: 26, y: -2.2, w: 7, h: 0.7, type: 'platform' }, // submerged ruin
+          { x: 44, y: -1.5, w: 8, h: 0.7, type: 'platform' },
+          { x: 60, y: -2.5, w: 6, h: 0.7, type: 'platform' },
+          { x: 76, y: -1, w: 20, h: 4, type: 'ground' }
+        ],
+        waterZones: [
+          { x: 10, y: -4.2, w: 66, h: 5.8 } // water surface at y = 1.6
+        ],
+        crates: [],
+        switches: [
+          { id: 'sw2_1', x: 46, y: -0.5, targetDoor: 'door2_1' }
+        ],
+        plates: [],
+        doors: [
+          { id: 'door2_1', x: 72, y: -1.5, w: 1.2, h: 6.5, openY: 4.5 }
+        ],
+        hazards: [],
+        enemies: [
+          { type: 'enemy_diver', x: 34, y: -1.8, patrolMin: 20, patrolMax: 52 },
+          { type: 'enemy_diver', x: 64, y: -1.5, patrolMin: 50, patrolMax: 70 }
+        ],
+        checkpoints: [{ x: 38, y: 2.2 }, { x: 78, y: 1.5 }],
+        secret: { x: 13, y: -3.2, note: 'Sunken Capsule #02: Pressure seals failed during the upper reservoir breach.' },
+        exitX: 90
+      },
+      {
+        num: '03',
+        title: 'THE TIMBER BARRICADE',
+        subtitle: 'Abandoned Industrial Warehouse',
+        desc: 'Haul heavy cargo crates onto counterweight plates to breach the barricaded warehouse gates.',
+        glbFile: '10_BACKGROUND_02_boarded_timber_gate_warehouse.glb',
+        skyColor: 0x0d0f12,
+        fogColor: 0x12151a,
+        fogDensity: 0.03,
+        ambientColor: 0x383c42,
+        dirColor: 0xc2b29b,
+        weather: 'dust',
+        spawn: { x: 2, y: 1.0 },
+        length: 90,
+        platforms: [
+          { x: -4, y: -2, w: 98, h: 4, type: 'ground' },
+          { x: 24, y: 2.6, w: 12, h: 0.7, type: 'platform' },
+          { x: 54, y: 3.0, w: 14, h: 0.7, type: 'platform' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c3_1', x: 16, y: 0.7, w: 1.4, h: 1.4 },
+          { id: 'c3_2', x: 46, y: 0.7, w: 1.4, h: 1.4 }
+        ],
+        switches: [
+          { id: 'sw3_top', x: 29, y: 3.4, targetDoor: 'door3_1' }
+        ],
+        plates: [
+          { id: 'pl3_1', x: 62, y: 0.1, targetDoor: 'door3_2' }
+        ],
+        doors: [
+          { id: 'door3_1', x: 38, y: 0, w: 1.2, h: 5.5, openY: 5.2 },
+          { id: 'door3_2', x: 74, y: 0, w: 1.4, h: 6.0, openY: 5.6 }
+        ],
+        hazards: [
+          { x: 42, y: 0.3, w: 2.2, h: 0.6, type: 'spikes' }
+        ],
+        enemies: [
+          { type: 'enemy_warden', x: 68, y: 0, patrolMin: 64, patrolMax: 72 }
+        ],
+        checkpoints: [{ x: 40, y: 0.5 }, { x: 76, y: 0.5 }],
+        secret: { x: 64, y: 3.8, note: 'Shipping Manifest #03: 400 containment units delivered to Sector 04.' },
+        exitX: 88
+      },
+      {
+        num: '04',
+        title: 'THE WATCHTOWER FACTORY',
+        subtitle: 'Searchlight Industrial Hall',
+        desc: 'Time your movements between sweeping sentinel drones and armored wardens.',
+        glbFile: '11_BACKGROUND_03_searchlight_industrial_hall.glb',
+        skyColor: 0x080b10,
+        fogColor: 0x0d121a,
+        fogDensity: 0.028,
+        ambientColor: 0x263242,
+        dirColor: 0x8faec9,
+        weather: 'dust',
+        spawn: { x: 2, y: 1.0 },
+        length: 96,
+        platforms: [
+          { x: -4, y: -2, w: 104, h: 4, type: 'ground' },
+          { x: 18, y: 0.9, w: 3.2, h: 1.5, type: 'cover' },
+          { x: 36, y: 0.9, w: 3.5, h: 1.5, type: 'cover' },
+          { x: 56, y: 2.4, w: 10, h: 0.7, type: 'platform' },
+          { x: 74, y: 0.9, w: 3.5, h: 1.5, type: 'cover' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c4_1', x: 50, y: 0.7, w: 1.3, h: 1.3 }
+        ],
+        switches: [
+          { id: 'sw4_1', x: 61, y: 3.2, targetDoor: 'door4_1' }
+        ],
+        plates: [],
+        doors: [
+          { id: 'door4_1', x: 82, y: 0, w: 1.3, h: 5.5, openY: 5.2 }
+        ],
+        hazards: [
+          { x: 44, y: 0.25, w: 2.5, h: 0.5, type: 'electric' }
+        ],
+        enemies: [
+          { type: 'enemy_sentinel', x: 24, y: 4.5, patrolMin: 12, patrolMax: 38 },
+          { type: 'enemy_warden', x: 48, y: 0, patrolMin: 40, patrolMax: 54 },
+          { type: 'enemy_sentinel', x: 72, y: 4.5, patrolMin: 64, patrolMax: 80 }
+        ],
+        checkpoints: [{ x: 41, y: 0.5 }, { x: 84, y: 0.5 }],
+        secret: { x: 10, y: 3.2, note: 'Security Directive #04: Optical scanners calibrate to upright human posture.' },
+        exitX: 94
+      },
+      {
+        num: '05',
+        title: 'THE GLASS OBSERVATION WING',
+        subtitle: 'Research Facility Exterior',
+        desc: 'Infiltrate the glass-walled testing wing while crawling experiments prowl the lower corridors.',
+        glbFile: '12_BACKGROUND_04_glass_research_facility_exterior.glb',
+        skyColor: 0x0a1118,
+        fogColor: 0x101a24,
+        fogDensity: 0.028,
+        ambientColor: 0x33475b,
+        dirColor: 0x9ec5e6,
+        weather: 'rain',
+        spawn: { x: 2, y: 1.0 },
+        length: 95,
+        platforms: [
+          { x: -4, y: -2, w: 102, h: 4, type: 'ground' },
+          { x: 20, y: 2.3, w: 14, h: 0.6, type: 'platform' },
+          { x: 45, y: 2.5, w: 16, h: 0.6, type: 'platform' },
+          { x: 70, y: 0.9, w: 4, h: 1.5, type: 'cover' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c5_1', x: 15, y: 0.7, w: 1.3, h: 1.3 }
+        ],
+        switches: [
+          { id: 'sw5_1', x: 52, y: 3.3, targetDoor: 'door5_1' }
+        ],
+        plates: [],
+        doors: [
+          { id: 'door5_1', x: 64, y: 0, w: 1.2, h: 5.5, openY: 5.2 }
+        ],
+        hazards: [
+          { x: 36, y: 0.25, w: 3.0, h: 0.5, type: 'electric' }
+        ],
+        enemies: [
+          { type: 'enemy_crawler', x: 28, y: 0, patrolMin: 21, patrolMax: 34 },
+          { type: 'enemy_warden', x: 76, y: 0, patrolMin: 68, patrolMax: 84 }
+        ],
+        checkpoints: [{ x: 40, y: 0.5 }, { x: 66, y: 0.5 }],
+        secret: { x: 26, y: 3.1, note: 'Lab Dossier #05: Neural relay range increases near deep water chambers.' },
+        exitX: 93
+      },
+      {
+        num: '06',
+        title: 'THE BROKEN ELEVATED WORLD',
+        subtitle: 'Fractured Overpass Over Void',
+        desc: 'Leap across shattered concrete spans above an endless abyss while hunter hounds give chase.',
+        glbFile: '13_BACKGROUND_05_broken_platform_over_void.glb',
+        skyColor: 0x070a0f,
+        fogColor: 0x0b1018,
+        fogDensity: 0.025,
+        ambientColor: 0x2a3644,
+        dirColor: 0x8ba3bd,
+        weather: 'mist',
+        spawn: { x: 2, y: 1.2 },
+        length: 98,
+        platforms: [
+          { x: -4, y: -2, w: 22, h: 4, type: 'ground' },
+          { x: 21, y: 0.4, w: 7, h: 0.8, type: 'platform' },
+          { x: 31, y: 1.3, w: 8, h: 0.8, type: 'platform' },
+          { x: 42, y: -2, w: 20, h: 4, type: 'ground' },
+          { x: 65, y: 0.8, w: 6, h: 0.8, type: 'platform' },
+          { x: 74, y: 1.8, w: 7, h: 0.8, type: 'platform' },
+          { x: 84, y: -2, w: 18, h: 4, type: 'ground' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c6_1', x: 48, y: 0.7, w: 1.3, h: 1.3 }
+        ],
+        switches: [],
+        plates: [
+          { id: 'pl6_1', x: 56, y: 0.1, targetDoor: 'door6_1' }
+        ],
+        doors: [
+          { id: 'door6_1', x: 60, y: 0, w: 1.2, h: 5.5, openY: 5.2 }
+        ],
+        hazards: [
+          { x: 18, y: -4.5, w: 24, h: 1.5, type: 'abyss' },
+          { x: 62, y: -4.5, w: 22, h: 1.5, type: 'abyss' }
+        ],
+        enemies: [
+          { type: 'enemy_hound', x: 53, y: 0, patrolMin: 44, patrolMax: 58 }
+        ],
+        checkpoints: [{ x: 43, y: 0.5 }, { x: 85, y: 0.5 }],
+        secret: { x: 34, y: 2.3, note: 'Structural Survey #06: Upper viaduct collapsed during seismic test 09.' },
+        exitX: 96
+      },
+      {
+        num: '07',
+        title: 'THE FLOODED TRANSIT',
+        subtitle: 'Subterranean Sewer Conduits',
+        desc: 'Swim through dark subterranean conduits, unlock hydraulic floodgates, and outmaneuver submerged divers.',
+        glbFile: '15_BACKGROUND_07_flooded_sewer_tunnel.glb',
+        skyColor: 0x050e14,
+        fogColor: 0x07141c,
+        fogDensity: 0.038,
+        ambientColor: 0x1b3a4b,
+        dirColor: 0x4b94b8,
+        weather: 'mist',
+        spawn: { x: 2, y: 2.2 },
+        length: 96,
+        platforms: [
+          { x: -4, y: -1, w: 12, h: 4, type: 'ground' },
+          { x: 8, y: -6.5, w: 74, h: 2, type: 'ground' },
+          { x: 36, y: 1.2, w: 8, h: 0.7, type: 'platform' }, // air pocket island
+          { x: 82, y: -1, w: 18, h: 4, type: 'ground' }
+        ],
+        waterZones: [
+          { x: 8, y: -4.6, w: 74, h: 6.4 } // surface at y=1.8
+        ],
+        crates: [],
+        switches: [
+          { id: 'sw7_1', x: 24, y: -3.5, targetDoor: 'door7_1' },
+          { id: 'sw7_2', x: 64, y: -3.5, targetDoor: 'door7_2' }
+        ],
+        plates: [],
+        doors: [
+          { id: 'door7_1', x: 32, y: -4.5, w: 1.2, h: 7.5, openY: 3.5 },
+          { id: 'door7_2', x: 76, y: -4.5, w: 1.2, h: 7.5, openY: 3.5 }
+        ],
+        hazards: [
+          { x: 48, y: -4.2, w: 3.0, h: 0.6, type: 'electric' }
+        ],
+        enemies: [
+          { type: 'enemy_diver', x: 20, y: -1.5, patrolMin: 12, patrolMax: 30 },
+          { type: 'enemy_diver', x: 56, y: -1.5, patrolMin: 44, patrolMax: 72 }
+        ],
+        checkpoints: [{ x: 39, y: 2.0 }, { x: 84, y: 1.5 }],
+        secret: { x: 73, y: -3.5, note: 'Transit Valve Log #07: Emergency drainage diverted to Lower Reservoir.' },
+        exitX: 94
+      },
+      {
+        num: '08',
+        title: 'THE SILENT WORKERS',
+        subtitle: 'Huge Doorway Crowd Chamber',
+        desc: 'Move silently alongside rows of synchronized husk workers and activate the central chamber lift.',
+        glbFile: '14_BACKGROUND_06_huge_doorway_crowd_chamber.glb',
+        skyColor: 0x0b0d10,
+        fogColor: 0x101318,
+        fogDensity: 0.026,
+        ambientColor: 0x353b45,
+        dirColor: 0xb8c2cc,
+        weather: 'dust',
+        spawn: { x: 2, y: 1.0 },
+        length: 98,
+        platforms: [
+          { x: -4, y: -2, w: 106, h: 4, type: 'ground' },
+          { x: 25, y: 2.4, w: 12, h: 0.7, type: 'platform' },
+          { x: 58, y: 2.6, w: 14, h: 0.7, type: 'platform' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c8_1', x: 20, y: 0.7, w: 1.4, h: 1.4 },
+          { id: 'c8_2', x: 52, y: 0.7, w: 1.4, h: 1.4 }
+        ],
+        switches: [
+          { id: 'sw8_1', x: 33, y: 3.2, targetDoor: 'door8_1' }
+        ],
+        plates: [
+          { id: 'pl8_1', x: 66, y: 0.1, targetDoor: 'door8_2' }
+        ],
+        doors: [
+          { id: 'door8_1', x: 42, y: 0, w: 1.3, h: 6.0, openY: 5.6 },
+          { id: 'door8_2', x: 82, y: 0, w: 1.5, h: 6.5, openY: 6.0 }
+        ],
+        hazards: [],
+        enemies: [
+          { type: 'enemy_husk', x: 14, y: 0, patrolMin: 10, patrolMax: 18 },
+          { type: 'enemy_stalker', x: 48, y: 0, patrolMin: 44, patrolMax: 56 },
+          { type: 'enemy_sentinel', x: 74, y: 4.6, patrolMin: 66, patrolMax: 80 }
+        ],
+        checkpoints: [{ x: 44, y: 0.5 }, { x: 85, y: 0.5 }],
+        secret: { x: 64, y: 3.4, note: 'Assembly Protocol #08: Workforce compliance reached 99.4% after Stage 3.' },
+        exitX: 96
+      },
+      {
+        num: '09',
+        title: 'THE VENTILATION MAZE',
+        subtitle: 'Underground Concrete Bunker',
+        desc: 'Crawl beneath high-voltage ducts and bypass crawling experiments in the subterranean bunker.',
+        glbFile: '17_BACKGROUND_09_underground_concrete_bunker.glb',
+        skyColor: 0x090b0e,
+        fogColor: 0x0e1116,
+        fogDensity: 0.032,
+        ambientColor: 0x2c343d,
+        dirColor: 0x9aa8b8,
+        weather: 'dust',
+        spawn: { x: 2, y: 1.0 },
+        length: 94,
+        platforms: [
+          { x: -4, y: -2, w: 102, h: 4, type: 'ground' },
+          { x: 16, y: 1.35, w: 10, h: 2.5, type: 'low_ceiling' }, // crouch tunnel!
+          { x: 44, y: 1.35, w: 12, h: 2.5, type: 'low_ceiling' }, // crouch tunnel!
+          { x: 66, y: 2.5, w: 10, h: 0.7, type: 'platform' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c9_1', x: 61, y: 0.7, w: 1.3, h: 1.3 }
+        ],
+        switches: [
+          { id: 'sw9_1', x: 72, y: 3.3, targetDoor: 'door9_1' }
+        ],
+        plates: [],
+        doors: [
+          { id: 'door9_1', x: 80, y: 0, w: 1.3, h: 5.5, openY: 5.2 }
+        ],
+        hazards: [
+          { x: 34, y: 0.25, w: 3.2, h: 0.5, type: 'electric' }
+        ],
+        enemies: [
+          { type: 'enemy_crawler', x: 29, y: 0, patrolMin: 27, patrolMax: 42 },
+          { type: 'enemy_crawler', x: 58, y: 0, patrolMin: 56, patrolMax: 65 }
+        ],
+        checkpoints: [{ x: 39, y: 0.5 }, { x: 82, y: 0.5 }],
+        secret: { x: 20, y: 4.1, note: 'Bunker Schematic #09: Ventilation shafts connect directly to Core Reactor.' },
+        exitX: 92
+      },
+      {
+        num: '10',
+        title: 'THE INDUSTRIAL DESCENT',
+        subtitle: 'Factory Conveyor Corridor',
+        desc: 'Navigate active conveyor shafts, heavy cable stalkers, and aerial searchlight drones.',
+        glbFile: '18_BACKGROUND_10_factory_conveyor_corridor.glb',
+        skyColor: 0x0a090d,
+        fogColor: 0x121017,
+        fogDensity: 0.03,
+        ambientColor: 0x3b2e3d,
+        dirColor: 0xc99e8f,
+        weather: 'dust',
+        spawn: { x: 2, y: 1.0 },
+        length: 98,
+        platforms: [
+          { x: -4, y: -2, w: 106, h: 4, type: 'ground' },
+          { x: 20, y: 2.2, w: 9, h: 0.7, type: 'platform' },
+          { x: 34, y: 3.4, w: 9, h: 0.7, type: 'platform' },
+          { x: 56, y: 0.9, w: 4, h: 1.5, type: 'cover' },
+          { x: 74, y: 2.4, w: 10, h: 0.7, type: 'platform' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c10_1', x: 15, y: 0.7, w: 1.3, h: 1.3 },
+          { id: 'c10_2', x: 68, y: 0.7, w: 1.4, h: 1.4 }
+        ],
+        switches: [
+          { id: 'sw10_1', x: 39, y: 4.2, targetDoor: 'door10_1' }
+        ],
+        plates: [
+          { id: 'pl10_1', x: 82, y: 0.1, targetDoor: 'door10_2' }
+        ],
+        doors: [
+          { id: 'door10_1', x: 48, y: 0, w: 1.3, h: 5.8, openY: 5.4 },
+          { id: 'door10_2', x: 88, y: 0, w: 1.4, h: 6.0, openY: 5.6 }
+        ],
+        hazards: [
+          { x: 28, y: 0.25, w: 4.0, h: 0.5, type: 'spikes' }
+        ],
+        enemies: [
+          { type: 'enemy_stalker', x: 62, y: 0, patrolMin: 52, patrolMax: 66 },
+          { type: 'enemy_sentinel', x: 76, y: 4.8, patrolMin: 68, patrolMax: 86 }
+        ],
+        checkpoints: [{ x: 50, y: 0.5 }, { x: 90, y: 0.5 }],
+        secret: { x: 78, y: 3.2, note: 'Conveyor Telemetry #10: Automated sorting rejects non-compliant biologicals.' },
+        exitX: 96
+      },
+      {
+        num: '11',
+        title: 'THE SILENT RESERVOIR',
+        subtitle: 'Submerged Observation Laboratory',
+        desc: 'Traverse the massive flooded research complex. Unlock twin hydraulic seals under deep pressure.',
+        glbFile: '19_BACKGROUND_11_observation_laboratory.glb',
+        skyColor: 0x040d14,
+        fogColor: 0x061521,
+        fogDensity: 0.034,
+        ambientColor: 0x1a3f54,
+        dirColor: 0x5cb3db,
+        weather: 'mist',
+        spawn: { x: 2, y: 2.4 },
+        length: 102,
+        platforms: [
+          { x: -4, y: -1, w: 12, h: 4, type: 'ground' },
+          { x: 8, y: -7.0, w: 80, h: 2, type: 'ground' },
+          { x: 30, y: 1.4, w: 7, h: 0.7, type: 'platform' }, // breath island 1
+          { x: 60, y: 1.4, w: 7, h: 0.7, type: 'platform' }, // breath island 2
+          { x: 88, y: -1, w: 18, h: 4, type: 'ground' }
+        ],
+        waterZones: [
+          { x: 8, y: -5.0, w: 80, h: 7.0 } // surface at y=2.0
+        ],
+        crates: [],
+        switches: [
+          { id: 'sw11_1', x: 22, y: -4.2, targetDoor: 'door11_1' },
+          { id: 'sw11_2', x: 74, y: -4.2, targetDoor: 'door11_2' }
+        ],
+        plates: [],
+        doors: [
+          { id: 'door11_1', x: 44, y: -5.0, w: 1.3, h: 8.0, openY: 3.8 },
+          { id: 'door11_2', x: 82, y: -5.0, w: 1.3, h: 8.0, openY: 3.8 }
+        ],
+        hazards: [
+          { x: 50, y: -4.7, w: 3.5, h: 0.6, type: 'electric' }
+        ],
+        enemies: [
+          { type: 'enemy_diver', x: 18, y: -2.0, patrolMin: 12, patrolMax: 28 },
+          { type: 'enemy_diver', x: 54, y: -2.0, patrolMin: 46, patrolMax: 68 },
+          { type: 'enemy_diver', x: 76, y: -2.0, patrolMin: 66, patrolMax: 80 }
+        ],
+        checkpoints: [{ x: 33, y: 2.2 }, { x: 63, y: 2.2 }, { x: 90, y: 1.5 }],
+        secret: { x: 40, y: -4.2, note: 'Core Observation #11: The central entity is not contained—it is broadcasting.' },
+        exitX: 100
+      },
+      {
+        num: '12',
+        title: 'THE FINAL FACILITY',
+        subtitle: 'Exterior Escape Bridge & Truth',
+        desc: 'Breach the final containment chamber, override the perimeter bridge lock, and step beyond the silent world.',
+        glbFile: '20_BACKGROUND_12_exterior_escape_bridge.glb',
+        skyColor: 0x0c1118,
+        fogColor: 0x131b26,
+        fogDensity: 0.022,
+        ambientColor: 0x3b495c,
+        dirColor: 0xdbeafe,
+        weather: 'rain',
+        spawn: { x: 2, y: 1.0 },
+        length: 108,
+        platforms: [
+          { x: -4, y: -2, w: 116, h: 4, type: 'ground' },
+          { x: 22, y: 0.9, w: 4, h: 1.5, type: 'cover' },
+          { x: 44, y: 2.5, w: 12, h: 0.7, type: 'platform' },
+          { x: 72, y: 0.9, w: 4, h: 1.5, type: 'cover' }
+        ],
+        waterZones: [],
+        crates: [
+          { id: 'c12_1', x: 38, y: 0.7, w: 1.4, h: 1.4 },
+          { id: 'c12_2', x: 80, y: 0.7, w: 1.4, h: 1.4 }
+        ],
+        switches: [
+          { id: 'sw12_1', x: 52, y: 3.3, targetDoor: 'door12_1' }
+        ],
+        plates: [
+          { id: 'pl12_1', x: 88, y: 0.1, targetDoor: 'door12_2' }
+        ],
+        doors: [
+          { id: 'door12_1', x: 62, y: 0, w: 1.4, h: 6.2, openY: 5.8 },
+          { id: 'door12_2', x: 96, y: 0, w: 1.6, h: 6.8, openY: 6.4 }
+        ],
+        hazards: [
+          { x: 30, y: 0.25, w: 3.0, h: 0.5, type: 'electric' }
+        ],
+        enemies: [
+          { type: 'enemy_warden', x: 25, y: 0, patrolMin: 16, patrolMax: 29 },
+          { type: 'enemy_stalker', x: 74, y: 0, patrolMin: 65, patrolMax: 78 },
+          { type: 'enemy_sentinel', x: 86, y: 4.8, patrolMin: 76, patrolMax: 94 }
+        ],
+        checkpoints: [{ x: 35, y: 0.5 }, { x: 65, y: 0.5 }, { x: 98, y: 0.5 }],
+        secret: { x: 46, y: 3.3, note: 'Final Transmission #12: Project NOCTURNE terminated. Horizon gate unlocked.' },
+        exitX: 105
+      }
+    ];
+
+    // ----------------------------------------------------------------------------
+    // 5. MAIN 2.5D CINEMATIC GAME ENGINE
+    // ----------------------------------------------------------------------------
+    class NocturneEngine {
+      constructor() {
+        this.persistence = new PersistenceManager();
+        this.sound = new SoundEngine();
+
+        this.canvas = document.getElementById('game-canvas');
+        this.renderer = new THREE.WebGLRenderer({
+          canvas: this.canvas,
+          antialias: true,
+          powerPreference: 'high-performance'
+        });
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.shadowMap.enabled = this.persistence.settings.shadows;
+        this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = this.persistence.settings.brightness;
+
+        this.scene = new THREE.Scene();
+        this.camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 220);
+        this.camera.position.set(4, 3.2, 16.5);
+
+        this.gltfLoader = typeof THREE.GLTFLoader !== 'undefined' ? new THREE.GLTFLoader() : null;
+        this.mixers = [];
+
+        // Game State
+        this.state = 'LOADING'; // LOADING, MENU, PLAYING, PAUSED, GAMEOVER, ENDING
+        this.currentChapterIdx = 0;
+        this.levelGroup = new THREE.Group();
+        this.scene.add(this.levelGroup);
+
+        // Input State
+        this.keys = {};
+        this.touchInput = { left: false, right: false, jump: false, crouch: false, interact: false, swimUp: false, swimDown: false };
+        this.jumpPressedEdge = false;
+        this.interactPressedEdge = false;
+
+        // Player Physics & State
+        this.player = {
+          mesh: null,
+          limbs: {},
+          x: 2,
+          y: 1.5,
+          vx: 0,
+          vy: 0,
+          w: 0.65,
+          h: 1.65,
+          facing: 1, // 1 right, -1 left
+          grounded: false,
+          crouching: false,
+          inWater: false,
+          breath: 100,
+          grabbedCrate: null,
+          animTime: 0,
+          stepTimer: 0,
+          invulnTimer: 0
+        };
+
+        // Active Level Entities
+        this.entities = {
+          platforms: [],
+          waterZones: [],
+          crates: [],
+          switches: [],
+          plates: [],
+          doors: [],
+          hazards: [],
+          enemies: [],
+          checkpoints: [],
+          secret: null,
+          particles: null,
+          exitPortal: null
+        };
+
+        // Camera State
+        this.camPos = new THREE.Vector3(4, 3.2, 16.5);
+        this.camShake = 0;
+        this.clock = new THREE.Clock();
+
+        this.bindEvents();
+        this.bindUI();
+        this.runBootSequence();
+      }
+
+      // --------------------------------------------------------------------------
+      // BOOT & ASSET AUDIT SEQUENCE
+      // --------------------------------------------------------------------------
+      async runBootSequence() {
+        const bar = document.getElementById('loading-bar');
+        const status = document.getElementById('loading-status');
+        const pct = document.getElementById('loading-percent');
+
+        const steps = [
+          'AUDITING 12 ENVIRONMENT GLB DESIGNS...',
+          'VERIFYING PROTAGONIST RIG (01_HERO)...',
+          'CALIBRATING 7 ENEMY AI ARCHETYPES...',
+          'INITIALIZING 2.5D PHYSICS & WATER VOLUMES...',
+          'SYNTHESIZING ATMOSPHERIC AUDIO...',
+          'READY'
+        ];
+
+        for (let i = 0; i < steps.length; i++) {
+          status.textContent = steps[i];
+          const progress = Math.round(((i + 1) / steps.length) * 100);
+          bar.style.width = `${progress}%`;
+          pct.textContent = `${progress}%`;
+          await new Promise(r => setTimeout(r, 160));
+        }
+
+        // Build scenic background for Main Menu
+        this.buildChapter(0, true);
+        this.state = 'MENU';
+        this.updateSaveStatusUI();
+
+        const loaderEl = document.getElementById('loading-screen');
+        loaderEl.style.opacity = '0';
+        setTimeout(() => {
+          loaderEl.classList.add('hidden');
+          document.getElementById('main-menu').classList.remove('hidden');
+          this.fadeCurtain(false);
+        }, 650);
+
+        this.animate();
+      }
+
+      fadeCurtain(show) {
+        const curtain = document.getElementById('fade-curtain');
+        curtain.style.opacity = show ? '1' : '0';
+      }
+
+      // --------------------------------------------------------------------------
+      // PROCEDURAL + GLB-READY ARTICULATED CHARACTER & ENEMY BUILDERS
+      // (Attempts GLTFLoader for supplied GLB paths, seamlessly falls back to
+      //  matching articulated silhouettes when local GLB binary isn't hosted)
+      // --------------------------------------------------------------------------
+      createProtagonistMesh() {
+        const root = new THREE.Group();
+
+        // Attempt async GLB load if path exists on server
+        if (this.gltfLoader) {
+          const heroMeta = this.persistence.settings.heroVariant === 'hero_02'
+            ? ASSET_MANIFEST.player[1]
+            : ASSET_MANIFEST.player[0];
+          this.gltfLoader.load(
+            heroMeta.path,
+            (gltf) => {
+              // Replace fallback procedural rig with actual GLB model if found
+              while (root.children.length > 0) root.remove(root.children[0]);
+              const model = gltf.scene;
+              model.scale.set(...heroMeta.scale);
+              model.rotation.set(...heroMeta.rotation);
+              model.traverse(c => {
+                if (c.isMesh) {
+                  c.castShadow = true;
+                  c.receiveShadow = true;
+                }
+              });
+              root.add(model);
+              if (gltf.animations && gltf.animations.length > 0) {
+                const mixer = new THREE.AnimationMixer(model);
+                mixer.clipAction(gltf.animations[0]).play();
+                this.mixers.push(mixer);
+              }
+            },
+            undefined,
+            () => {
+              // Expected in standalone browser preview without external binary files;
+              // high-craft articulated silhouette remains active.
+            }
+          );
+        }
+
+        // High-detail atmospheric silhouette matching 01_HERO_RedShirt_Child.glb
+        const isBlue = this.persistence.settings.heroVariant === 'hero_02';
+        const shirtMat = new THREE.MeshStandardMaterial({
+          color: isBlue ? 0x254e70 : 0x8f2424,
+          roughness: 0.75,
+          metalness: 0.05
+        });
+        const darkMat = new THREE.MeshStandardMaterial({
+          color: 0x13171d,
+          roughness: 0.85
+        });
+        const skinMat = new THREE.MeshStandardMaterial({
+          color: 0xc2a896,
+          roughness: 0.7
+        });
+
+        // Torso
+        const torso = new THREE.Mesh(new THREE.BoxGeometry(0.36, 0.56, 0.24), shirtMat);
+        torso.position.y = 0.92;
+        torso.castShadow = true;
+        root.add(torso);
+
+        // Head
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), skinMat);
+        head.position.y = 1.38;
+        head.castShadow = true;
+        root.add(head);
+
+        // Hair cap
+        const hair = new THREE.Mesh(new THREE.SphereGeometry(0.19, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.55), darkMat);
+        hair.position.set(-0.02, 1.41, 0);
+        root.add(hair);
+
+        // Limbs
+        const legGeo = new THREE.BoxGeometry(0.13, 0.58, 0.14);
+        const leftLeg = new THREE.Mesh(legGeo, darkMat);
+        leftLeg.position.set(0, 0.35, 0.08);
+        leftLeg.castShadow = true;
+        root.add(leftLeg);
+
+        const rightLeg = new THREE.Mesh(legGeo, darkMat);
+        rightLeg.position.set(0, 0.35, -0.08);
+        rightLeg.castShadow = true;
+        root.add(rightLeg);
+
+        const armGeo = new THREE.BoxGeometry(0.11, 0.48, 0.11);
+        const leftArm = new THREE.Mesh(armGeo, shirtMat);
+        leftArm.position.set(0, 0.92, 0.22);
+        leftArm.castShadow = true;
+        root.add(leftArm);
+
+        const rightArm = new THREE.Mesh(armGeo, shirtMat);
+        rightArm.position.set(0, 0.92, -0.22);
+        rightArm.castShadow = true;
+        root.add(rightArm);
+
+        this.player.limbs = { torso, head, leftLeg, rightLeg, leftArm, rightArm };
+        return root;
+      }
+
+      createEnemyMesh(enemyMeta) {
+        const group = new THREE.Group();
+
+        // Attempt GLB load from manifest path
+        if (this.gltfLoader) {
+          this.gltfLoader.load(
+            enemyMeta.path,
+            (gltf) => {
+              while (group.children.length > 0) group.remove(group.children[0]);
+              const model = gltf.scene;
+              model.traverse(c => {
+                if (c.isMesh) {
+                  c.castShadow = true;
+                  c.receiveShadow = true;
+                }
+              });
+              group.add(model);
+            },
+            undefined,
+            () => {}
+          );
+        }
+
+        const coatMat = new THREE.MeshStandardMaterial({ color: 0x10141a, roughness: 0.8 });
+        const accentMat = new THREE.MeshStandardMaterial({ color: 0x3b424c, roughness: 0.6 });
+        const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff3b30 });
+
+        if (enemyMeta.type === 'enemy_hound') {
+          // Quadruped Hunter Hound silhouette
+          const body = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.45, 0.36), coatMat);
+          body.position.y = 0.55;
+          body.castShadow = true;
+          group.add(body);
+
+          const head = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.32, 0.28), coatMat);
+          head.position.set(0.58, 0.72, 0);
+          group.add(head);
+
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
+          eye.position.set(0.78, 0.76, 0.1);
+          group.add(eye);
+        } else if (enemyMeta.type === 'enemy_crawler') {
+          // Low-profile Crawling Experiment
+          const body = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.34, 0.48), accentMat);
+          body.position.y = 0.25;
+          body.castShadow = true;
+          group.add(body);
+
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 8), eyeMat);
+          eye.position.set(0.58, 0.3, 0.14);
+          group.add(eye);
+        } else if (enemyMeta.type === 'enemy_sentinel') {
+          // Aerial Security Sentinel Drone
+          const hull = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.3, 0.4, 12), accentMat);
+          hull.castShadow = true;
+          group.add(hull);
+
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 10), eyeMat);
+          eye.position.set(0.32, -0.05, 0);
+          group.add(eye);
+        } else if (enemyMeta.type === 'enemy_diver') {
+          // Submerged Flooded Diver
+          const suit = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.25, 1.45, 12), accentMat);
+          suit.rotation.z = Math.PI * 0.35;
+          suit.castShadow = true;
+          group.add(suit);
+
+          const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.26, 14, 14), coatMat);
+          helmet.position.set(0.68, 0.28, 0);
+          group.add(helmet);
+
+          const visor = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+          visor.position.set(0.86, 0.3, 0);
+          group.add(visor);
+        } else {
+          // Tall Searchlight Warden / Cable Stalker / Husk Worker
+          const height = enemyMeta.type === 'enemy_stalker' ? 2.35 : 2.05;
+          const body = new THREE.Mesh(new THREE.BoxGeometry(0.52, height * 0.65, 0.38), coatMat);
+          body.position.y = height * 0.48;
+          body.castShadow = true;
+          group.add(body);
+
+          const head = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 14), accentMat);
+          head.position.y = height * 0.88;
+          group.add(head);
+
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), eyeMat);
+          eye.position.set(0.2, height * 0.88, 0.08);
+          group.add(eye);
+        }
+
+        // Visible Volumetric-style Searchlight Cone for enemies with flashlights/scanners
+        let coneMesh = null;
+        if (enemyMeta.hasLight) {
+          const coneLength = enemyMeta.visionRange;
+          const coneRadius = Math.tan(enemyMeta.visionAngle) * coneLength;
+          const coneGeo = new THREE.ConeGeometry(coneRadius, coneLength, 24, 1, true);
+          coneGeo.translate(0, -coneLength / 2, 0);
+          coneGeo.rotateZ(Math.PI / 2);
+
+          const coneMat = new THREE.MeshBasicMaterial({
+            color: enemyMeta.aquatic ? 0x38bdf8 : 0xe2e8f0,
+            transparent: true,
+            opacity: 0.14,
+            side: THREE.DoubleSide,
+            depthWrite: false
+          });
+          coneMesh = new THREE.Mesh(coneGeo, coneMat);
+          coneMesh.position.set(0.3, enemyMeta.flying ? -0.1 : 1.35, 0);
+          if (enemyMeta.flying) {
+            coneMesh.rotation.z = -Math.PI * 0.38;
+          }
+          group.add(coneMesh);
+        }
+
+        return { group, coneMesh };
+      }
+
+      // --------------------------------------------------------------------------
+      // LEVEL & ENVIRONMENT BUILDER (All 12 Chapters)
+      // --------------------------------------------------------------------------
+      buildChapter(chapterIdx, isMenuPreview = false) {
+        this.currentChapterIdx = chapterIdx;
+        const cfg = CHAPTERS[chapterIdx];
+
+        // Clear existing level geometry
+        while (this.levelGroup.children.length > 0) {
+          this.levelGroup.remove(this.levelGroup.children[0]);
+        }
+        this.mixers = [];
+
+        this.entities = {
+          platforms: [],
+          waterZones: [],
+          crates: [],
+          switches: [],
+          plates: [],
+          doors: [],
+          hazards: [],
+          enemies: [],
+          checkpoints: [],
+          secret: null,
+          particles: null,
+          exitPortal: null
+        };
+
+        // Atmosphere & Fog
+        this.scene.background = new THREE.Color(cfg.skyColor);
+        this.scene.fog = new THREE.FogExp2(cfg.fogColor, cfg.fogDensity);
+
+        // Three-Point Cinematic Lighting
+        const ambient = new THREE.AmbientLight(cfg.ambientColor, 1.15);
+        this.levelGroup.add(ambient);
+
+        const dirLight = new THREE.DirectionalLight(cfg.dirColor, 1.55);
+        dirLight.position.set(18, 28, 22);
+        dirLight.castShadow = this.persistence.settings.shadows;
+        dirLight.shadow.mapSize.width = this.persistence.settings.graphicsQuality === 'LOW' ? 512 : 1024;
+        dirLight.shadow.mapSize.height = this.persistence.settings.graphicsQuality === 'LOW' ? 512 : 1024;
+        dirLight.shadow.camera.near = 1;
+        dirLight.shadow.camera.far = 140;
+        const d = 65;
+        dirLight.shadow.camera.left = -d;
+        dirLight.shadow.camera.right = d;
+        dirLight.shadow.camera.top = d;
+        dirLight.shadow.camera.bottom = -d;
+        this.levelGroup.add(dirLight);
+
+        // Back rim light for silhouette readability
+        const rimLight = new THREE.DirectionalLight(0x93c5fd, 0.65);
+        rimLight.position.set(-15, 14, -18);
+        this.levelGroup.add(rimLight);
+
+        // Attempt to load supplied chapter GLB background if hosted
+        if (this.gltfLoader) {
+          this.gltfLoader.load(
+            `public/models/environment/${cfg.glbFile}`,
+            (gltf) => {
+              const bgModel = gltf.scene;
+              bgModel.position.set(cfg.length * 0.45, -1, -6);
+              this.levelGroup.add(bgModel);
+            },
+            undefined,
+            () => {}
+          );
+        }
+
+        // Rich 2.5D Layered Background Architecture & Depth Silhouettes
+        this.buildEnvironmentDepthLayers(cfg);
+
+        // Materials
+        const concreteMat = new THREE.MeshStandardMaterial({ color: 0x1c222b, roughness: 0.88, metalness: 0.1 });
+        const platformMat = new THREE.MeshStandardMaterial({ color: 0x2b3440, roughness: 0.75, metalness: 0.25 });
+        const coverMat = new THREE.MeshStandardMaterial({ color: 0x242a32, roughness: 0.85 });
+
+        // Build Solid Platforms & Ground
+        cfg.platforms.forEach(p => {
+          const mat = p.type === 'ground' ? concreteMat : (p.type === 'cover' ? coverMat : platformMat);
+          const geo = new THREE.BoxGeometry(p.w, p.h, p.type === 'cover' ? 1.4 : 4.2);
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.set(p.x + p.w / 2, p.y + p.h / 2, p.type === 'cover' ? -0.9 : 0);
+          mesh.receiveShadow = true;
+          mesh.castShadow = true;
+          this.levelGroup.add(mesh);
+
+          if (p.type !== 'cover') {
+            this.entities.platforms.push({
+              minX: p.x,
+              maxX: p.x + p.w,
+              minY: p.y,
+              maxY: p.y + p.h,
+              type: p.type
+            });
+          }
+        });
+
+        // Build Water Volumes
+        cfg.waterZones.forEach(w => {
+          const waterGeo = new THREE.BoxGeometry(w.w, w.h, 4.4);
+          const waterMat = new THREE.MeshStandardMaterial({
+            color: 0x0d4a66,
+            transparent: true,
+            opacity: 0.48,
+            roughness: 0.15,
+            metalness: 0.3
+          });
+          const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+          waterMesh.position.set(w.x + w.w / 2, w.y + w.h / 2, 0.2);
+          this.levelGroup.add(waterMesh);
+
+          // Glowing water surface line
+          const surfGeo = new THREE.BoxGeometry(w.w, 0.08, 4.45);
+          const surfMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.55 });
+          const surfMesh = new THREE.Mesh(surfGeo, surfMat);
+          surfMesh.position.set(w.x + w.w / 2, w.y + w.h, 0.2);
+          this.levelGroup.add(surfMesh);
+
+          this.entities.waterZones.push({
+            minX: w.x,
+            maxX: w.x + w.w,
+            minY: w.y,
+            maxY: w.y + w.h
+          });
+        });
+
+        // Build Push/Pull Crates
+        const crateMat = new THREE.MeshStandardMaterial({ color: 0x5c432c, roughness: 0.85, metalness: 0.1 });
+        cfg.crates.forEach(c => {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(c.w, c.h, 1.4), crateMat);
+          mesh.position.set(c.x, c.y + c.h / 2, 0);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          this.levelGroup.add(mesh);
+          this.entities.crates.push({
+            id: c.id,
+            mesh,
+            x: c.x,
+            y: c.y,
+            w: c.w,
+            h: c.h,
+            vx: 0,
+            vy: 0
+          });
+        });
+
+        // Build Doors
+        const doorMat = new THREE.MeshStandardMaterial({ color: 0x374151, roughness: 0.5, metalness: 0.65 });
+        cfg.doors.forEach(d => {
+          const mesh = new THREE.Mesh(new THREE.BoxGeometry(d.w, d.h, 3.6), doorMat);
+          mesh.position.set(d.x + d.w / 2, d.y + d.h / 2, 0);
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          this.levelGroup.add(mesh);
+          this.entities.doors.push({
+            id: d.id,
+            mesh,
+            x: d.x,
+            closedY: d.y,
+            openY: d.openY,
+            currentY: d.y,
+            w: d.w,
+            h: d.h,
+            isOpen: false
+          });
+        });
+
+        // Build Switches
+        cfg.switches.forEach(s => {
+          const base = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.9, 0.4), new THREE.MeshStandardMaterial({ color: 0x1e293b }));
+          base.position.set(s.x, s.y + 0.45, -0.5);
+          const lever = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.12), new THREE.MeshBasicMaterial({ color: 0xf59e0b }));
+          lever.position.set(s.x, s.y + 0.75, -0.35);
+          lever.rotation.z = 0.45;
+          this.levelGroup.add(base, lever);
+
+          this.entities.switches.push({
+            id: s.id,
+            x: s.x,
+            y: s.y,
+            targetDoor: s.targetDoor,
+            lever,
+            activated: false
+          });
+        });
+
+        // Build Pressure Plates
+        cfg.plates.forEach(pl => {
+          const mesh = new THREE.Mesh(
+            new THREE.BoxGeometry(2.0, 0.18, 1.6),
+            new THREE.MeshStandardMaterial({ color: 0xd97706, emissive: 0x78350f })
+          );
+          mesh.position.set(pl.x, pl.y, 0);
+          this.levelGroup.add(mesh);
+          this.entities.plates.push({
+            id: pl.id,
+            x: pl.x,
+            y: pl.y,
+            targetDoor: pl.targetDoor,
+            mesh,
+            pressed: false
+          });
+        });
+
+        // Build Environmental Hazards
+        cfg.hazards.forEach(h => {
+          if (h.type !== 'abyss') {
+            const hazMat = new THREE.MeshBasicMaterial({
+              color: h.type === 'electric' ? 0x38bdf8 : 0xef4444
+            });
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(h.w, h.h, 2.2), hazMat);
+            mesh.position.set(h.x + h.w / 2, h.y + h.h / 2, 0);
+            this.levelGroup.add(mesh);
+          }
+          this.entities.hazards.push({
+            minX: h.x,
+            maxX: h.x + h.w,
+            minY: h.y,
+            maxY: h.y + h.h,
+            type: h.type
+          });
+        });
+
+        // Build Enemies
+        cfg.enemies.forEach((eCfg, idx) => {
+          const meta = ASSET_MANIFEST.enemies.find(m => m.id === eCfg.type) || ASSET_MANIFEST.enemies[0];
+          const { group, coneMesh } = this.createEnemyMesh(meta);
+          group.position.set(eCfg.x, eCfg.y, 0);
+          this.levelGroup.add(group);
+          this.entities.enemies.push({
+            id: `enemy_${idx}`,
+            meta,
+            group,
+            coneMesh,
+            x: eCfg.x,
+            y: eCfg.y,
+            startX: eCfg.x,
+            startY: eCfg.y,
+            patrolMin: eCfg.patrolMin,
+            patrolMax: eCfg.patrolMax,
+            dir: 1,
+            state: 'PATROL', // PATROL, ALERT, CHASE
+            alertTimer: 0
+          });
+        });
+
+        // Build Checkpoints
+        cfg.checkpoints.forEach((cp, idx) => {
+          const beacon = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.12, 0.12, 1.4, 8),
+            new THREE.MeshStandardMaterial({ color: 0x334155 })
+          );
+          beacon.position.set(cp.x, cp.y + 0.7, -0.8);
+          const bulb = new THREE.Mesh(
+            new THREE.SphereGeometry(0.14, 10, 10),
+            new THREE.MeshBasicMaterial({ color: 0x475569 })
+          );
+          bulb.position.set(cp.x, cp.y + 1.45, -0.8);
+          this.levelGroup.add(beacon, bulb);
+          this.entities.checkpoints.push({
+            id: idx,
+            x: cp.x,
+            y: cp.y,
+            bulb,
+            triggered: false
+          });
+        });
+
+        // Build Hidden Secret Collectible Orb
+        if (cfg.secret) {
+          const alreadyFound = this.persistence.saveData.secretsFound.includes(chapterIdx);
+          const orb = new THREE.Mesh(
+            new THREE.OctahedronGeometry(0.28, 0),
+            new THREE.MeshBasicMaterial({ color: alreadyFound ? 0x334155 : 0xfbbf24 })
+          );
+          orb.position.set(cfg.secret.x, cfg.secret.y, 0);
+          this.levelGroup.add(orb);
+          this.entities.secret = {
+            ...cfg.secret,
+            mesh: orb,
+            collected: alreadyFound
+          };
+        }
+
+        // Build Chapter Exit Portal Archway
+        const exitArch = new THREE.Mesh(
+          new THREE.BoxGeometry(2.2, 5.2, 3.8),
+          new THREE.MeshBasicMaterial({ color: 0xdbeafe, transparent: true, opacity: 0.28 })
+        );
+        exitArch.position.set(cfg.exitX + 1.1, 2.6, 0);
+        this.levelGroup.add(exitArch);
+        this.entities.exitPortal = { x: cfg.exitX, mesh: exitArch };
+
+        // Atmospheric Particles (Rain, Mist, Dust)
+        this.buildParticles(cfg);
+
+        // Spawn Protagonist
+        this.player.mesh = this.createProtagonistMesh();
+        this.levelGroup.add(this.player.mesh);
+
+        const useSavedPos = !isMenuPreview &&
+          this.persistence.saveData.hasSave &&
+          this.persistence.saveData.currentChapter === chapterIdx;
+
+        this.respawnPlayer(
+          useSavedPos ? this.persistence.saveData.checkpointX : cfg.spawn.x,
+          useSavedPos ? this.persistence.saveData.checkpointY : cfg.spawn.y
+        );
+
+        // Update HUD Labels
+        document.getElementById('hud-chapter-num').textContent = `CHAPTER ${cfg.num}`;
+        document.getElementById('hud-chapter-title').textContent = cfg.title;
+        document.getElementById('hud-secrets-count').textContent = `SECRETS: ${this.persistence.saveData.secretsFound.length}/12`;
+      }
+
+      buildEnvironmentDepthLayers(cfg) {
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x0f141c, roughness: 0.95 });
+        const farMat = new THREE.MeshBasicMaterial({ color: 0x0a0f16 });
+
+        for (let x = -10; x < cfg.length + 25; x += 8) {
+          // Midground industrial pillars / dead trees
+          const h = 12 + (Math.sin(x * 0.7) * 4);
+          const w = cfg.weather === 'rain' ? 0.65 : 1.6;
+          const pillar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 1.2), pillarMat);
+          pillar.position.set(x, h / 2 - 2, -4.5);
+          this.levelGroup.add(pillar);
+
+          // Distant architectural silhouettes
+          const tower = new THREE.Mesh(new THREE.BoxGeometry(4.5, 22, 2), farMat);
+          tower.position.set(x * 1.2, 7, -18);
+          this.levelGroup.add(tower);
+
+          // Foreground framing silhouettes (parallax depth)
+          if (x % 16 === 0) {
+            const fgBeam = new THREE.Mesh(new THREE.BoxGeometry(0.55, 16, 0.5), farMat);
+            fgBeam.position.set(x + 3, 6, 4.8);
+            this.levelGroup.add(fgBeam);
+          }
+        }
+      }
+
+      buildParticles(cfg) {
+        if (this.persistence.settings.graphicsQuality === 'LOW') return;
+        const count = this.persistence.settings.graphicsQuality === 'ULTRA' ? 650 : 320;
+        const positions = new Float32Array(count * 3);
+        for (let i = 0; i < count; i++) {
+          positions[i * 3] = Math.random() * (cfg.length + 20) - 10;
+          positions[i * 3 + 1] = Math.random() * 18 - 4;
+          positions[i * 3 + 2] = Math.random() * 10 - 5;
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const mat = new THREE.MeshBasicMaterial({
+          color: cfg.weather === 'rain' ? 0x93c5fd : 0xcbd5e1
+        });
+        const points = new THREE.Points(
+          geo,
+          new THREE.PointsMaterial({
+            color: cfg.weather === 'rain' ? 0x93c5fd : 0x94a3b8,
+            size: cfg.weather === 'rain' ? 0.09 : 0.12,
+            transparent: true,
+            opacity: 0.45
+          })
+        );
+        this.levelGroup.add(points);
+        this.entities.particles = { points, weather: cfg.weather, length: cfg.length };
+      }
+
+      // --------------------------------------------------------------------------
+      // PLAYER SPAWN, CHECKPOINTS, DEATH & CHAPTER PROGRESSION
+      // --------------------------------------------------------------------------
+      respawnPlayer(x, y) {
+        this.player.x = x;
+        this.player.y = y;
+        this.player.vx = 0;
+        this.player.vy = 0;
+        this.player.breath = 100;
+        this.player.grabbedCrate = null;
+        this.player.crouching = false;
+        this.player.inWater = false;
+        this.player.invulnTimer = 1.0;
+
+        // Reset enemies to their patrol origins so player is never spawn-camped
+        this.entities.enemies.forEach(e => {
+          e.x = e.startX;
+          e.y = e.startY;
+          e.state = 'PATROL';
+          e.alertTimer = 0;
+          e.group.position.set(e.x, e.y, 0);
+        });
+
+        this.camPos.set(x + 2, y + 2.5, 16.5);
+        this.camera.position.copy(this.camPos);
+      }
+
+      startChapter(idx, forceSpawnStart = false) {
+        this.sound.init();
+        this.sound.resume();
+        this.fadeCurtain(true);
+
+        setTimeout(() => {
+          if (forceSpawnStart) {
+            this.persistence.saveData.hasSave = true;
+            this.persistence.saveData.currentChapter = idx;
+            this.persistence.saveData.checkpointX = CHAPTERS[idx].spawn.x;
+            this.persistence.saveData.checkpointY = CHAPTERS[idx].spawn.y;
+            this.persistence.writeSave();
+          }
+
+          this.buildChapter(idx, false);
+          this.hideAllMenus();
+          document.getElementById('game-hud').classList.remove('hidden');
+          this.updateTouchControlsVisibility();
+          this.state = 'PLAYING';
+          this.fadeCurtain(false);
+
+          // Show cinematic chapter banner
+          const cfg = CHAPTERS[idx];
+          const banner = document.getElementById('chapter-banner');
+          document.getElementById('banner-sub').textContent = `CHAPTER ${cfg.num}`;
+          document.getElementById('banner-main').textContent = cfg.title;
+          document.getElementById('banner-desc').textContent = cfg.desc;
+          banner.style.opacity = '1';
+          setTimeout(() => {
+            banner.style.opacity = '0';
+          }, 3600);
+        }, 450);
+      }
+
+      triggerDeath(reason = 'DETECTED IN THE DARK') {
+        if (this.state !== 'PLAYING' || this.player.invulnTimer > 0) return;
+        this.state = 'GAMEOVER';
+        this.sound.playDeath();
+        this.camShake = 0.55;
+        this.persistence.saveData.deaths += 1;
+        this.persistence.writeSave();
+
+        document.getElementById('death-reason').textContent = reason;
+        document.getElementById('gameover-screen').classList.remove('hidden');
+      }
+
+      completeCurrentChapter() {
+        if (this.state !== 'PLAYING') return;
+        this.sound.playCheckpoint();
+        const nextIdx = this.currentChapterIdx + 1;
+
+        if (nextIdx >= CHAPTERS.length) {
+          // Final Ending Sequence!
+          this.persistence.saveData.completedGame = true;
+          this.persistence.saveData.unlockedChapters = 12;
+          this.persistence.writeSave();
+          this.state = 'ENDING';
+          this.hideAllMenus();
+          const stats = document.getElementById('ending-stats');
+          const pct = Math.round(((12 + this.persistence.saveData.secretsFound.length) / 24) * 100);
+          stats.innerHTML = `
+            <div>CHAPTERS: 12 / 12</div>
+            <div>SECRETS: ${this.persistence.saveData.secretsFound.length} / 12</div>
+            <div>COMPLETION: ${pct}%</div>
+            <div>ATTEMPTS: ${this.persistence.saveData.deaths + 1}</div>
+          `;
+          document.getElementById('ending-screen').classList.remove('hidden');
+        } else {
+          this.persistence.saveData.hasSave = true;
+          this.persistence.saveData.currentChapter = nextIdx;
+          this.persistence.saveData.unlockedChapters = Math.max(this.persistence.saveData.unlockedChapters, nextIdx + 1);
+          this.persistence.saveData.checkpointX = CHAPTERS[nextIdx].spawn.x;
+          this.persistence.saveData.checkpointY = CHAPTERS[nextIdx].spawn.y;
+          this.persistence.writeSave();
+          this.startChapter(nextIdx, true);
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // GAMEPLAY PHYSICS, WATER, PUZZLES & ENEMY AI UPDATE LOOP
+      // --------------------------------------------------------------------------
+      updateGameplay(dt) {
+        const p = this.player;
+        const cfg = CHAPTERS[this.currentChapterIdx];
+        if (p.invulnTimer > 0) p.invulnTimer -= dt;
+
+        // Poll Gamepad if connected
+        const gp = this.pollGamepad();
+
+        // Gather directional inputs
+        const moveLeft = this.keys['KeyA'] || this.keys['ArrowLeft'] || this.touchInput.left || gp.left;
+        const moveRight = this.keys['KeyD'] || this.keys['ArrowRight'] || this.touchInput.right || gp.right;
+        const sprint = this.keys['ShiftLeft'] || this.keys['ShiftRight'] || gp.sprint;
+        const crouchHeld = this.keys['KeyC'] || this.keys['ControlLeft'] || this.keys['ArrowDown'] || this.keys['KeyS'] || this.touchInput.crouch || gp.crouch;
+        const swimUp = this.keys['KeyW'] || this.keys['ArrowUp'] || this.keys['Space'] || this.touchInput.swimUp || this.touchInput.jump || gp.jump;
+        const swimDown = this.keys['KeyS'] || this.keys['ArrowDown'] || this.touchInput.swimDown || gp.crouch;
+        const interactHeld = this.keys['KeyE'] || this.touchInput.interact || gp.interact;
+
+        // Check Water Volume
+        const wasInWater = p.inWater;
+        p.inWater = false;
+        let currentWaterSurface = 0;
+        for (const w of this.entities.waterZones) {
+          if (p.x >= w.minX && p.x <= w.maxX && p.y + 0.8 >= w.minY && p.y + 0.8 <= w.maxY) {
+            p.inWater = true;
+            currentWaterSurface = w.maxY;
+            break;
+          }
+        }
+
+        const overlay = document.getElementById('cinematic-overlay');
+        const breathContainer = document.getElementById('breath-container');
+        const swimCluster = document.getElementById('touch-swim-cluster');
+
+        if (p.inWater && !wasInWater) {
+          this.sound.playSplash();
+          p.grabbedCrate = null;
+        }
+
+        if (p.inWater) {
+          overlay.classList.add('underwater');
+          breathContainer.classList.remove('hidden');
+          breathContainer.classList.add('flex');
+          swimCluster.classList.remove('hidden');
+          swimCluster.classList.add('flex');
+        } else {
+          overlay.classList.remove('underwater');
+          breathContainer.classList.add('hidden');
+          breathContainer.classList.remove('flex');
+          swimCluster.classList.add('hidden');
+          swimCluster.classList.remove('flex');
+        }
+
+        // Crouching state (cannot stand up under low ceiling)
+        const forcedCrouch = this.isUnderLowCeiling(p.x, p.y);
+        p.crouching = !p.inWater && (crouchHeld || forcedCrouch);
+        p.h = p.crouching ? 0.92 : 1.65;
+
+        // Horizontal Movement
+        let moveDir = 0;
+        if (moveLeft) moveDir -= 1;
+        if (moveRight) moveDir += 1;
+
+        if (moveDir !== 0 && !p.grabbedCrate) {
+          p.facing = moveDir;
+        }
+
+        let targetSpeed = 0;
+        if (moveDir !== 0) {
+          if (p.grabbedCrate) {
+            targetSpeed = moveDir * 2.2;
+          } else if (p.inWater) {
+            targetSpeed = moveDir * 3.8;
+          } else if (p.crouching) {
+            targetSpeed = moveDir * 2.3;
+          } else if (sprint) {
+            targetSpeed = moveDir * 6.4;
+          } else {
+            targetSpeed = moveDir * 4.5;
+          }
+        }
+
+        const accel = p.inWater ? 8.0 : (p.grounded ? 26.0 : 14.0);
+        p.vx += (targetSpeed - p.vx) * Math.min(1, accel * dt);
+
+        // Vertical Physics (Swimming vs Gravity & Jumping)
+        if (p.inWater) {
+          let targetVy = -0.35; // gentle sink
+          if (swimUp) targetVy = 3.5;
+          if (swimDown) targetVy = -3.6;
+          p.vy += (targetVy - p.vy) * Math.min(1, 7.0 * dt);
+
+          // Oxygen management
+          const headSubmerged = (p.y + 1.45) < currentWaterSurface;
+          if (headSubmerged) {
+            p.breath = Math.max(0, p.breath - 9.5 * dt);
+            if (p.breath <= 0) {
+              this.triggerDeath('DROWNED IN THE DEPTHS');
+              return;
+            }
+          } else {
+            p.breath = Math.min(100, p.breath + 38 * dt);
+            if (p.vy > 0 && p.y + 1.4 > currentWaterSurface) {
+              p.vy = Math.min(p.vy, 0.8);
+            }
+          }
+          document.getElementById('breath-bar').style.width = `${p.breath}%`;
+        } else {
+          p.breath = Math.min(100, p.breath + 45 * dt);
+          p.vy -= 22.0 * dt; // Realistic gravity
+
+          if (this.jumpPressedEdge && p.grounded && !p.crouching && !p.grabbedCrate) {
+            p.vy = 8.8;
+            p.grounded = false;
+            this.sound.playJump();
+          }
+        }
+
+        // Integrate Player Position with AABB Collision
+        this.moveEntityWithCollisions(p, dt);
+
+        // Crate Grab / Push / Pull Interaction
+        this.updateInteractions(interactHeld, dt);
+
+        // Update Crates Physics & Pressure Plates
+        this.updateCratesAndPuzzles(dt);
+
+        // Update Enemies AI & Searchlights
+        this.updateEnemies(dt);
+
+        // Check Hazards, Checkpoints, Secrets & Exit
+        this.updateTriggers(cfg);
+
+        // Animate Character Limbs & Camera
+        this.animatePlayerModel(dt);
+        this.updateCinematicCamera(cfg, dt);
+        this.updateParticles(dt);
+
+        // Clear single-frame edge triggers
+        this.jumpPressedEdge = false;
+        this.interactPressedEdge = false;
+      }
+
+      isUnderLowCeiling(x, y) {
+        for (const plat of this.entities.platforms) {
+          if (x + 0.25 > plat.minX && x - 0.25 < plat.maxX) {
+            if (plat.minY >= y + 0.8 && plat.minY <= y + 1.7) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      moveEntityWithCollisions(ent, dt) {
+        const halfW = ent.w / 2;
+
+        // Horizontal step
+        ent.x += ent.vx * dt;
+        if (ent.x < 0.5) {
+          ent.x = 0.5;
+          ent.vx = 0;
+        }
+
+        const solidBoxes = this.getSolidColliders(ent);
+        for (const box of solidBoxes) {
+          if (ent.y + ent.h > box.minY + 0.05 && ent.y < box.maxY - 0.05) {
+            if (ent.x + halfW > box.minX && ent.x - halfW < box.maxX) {
+              if (ent.vx > 0) {
+                ent.x = box.minX - halfW;
+                ent.vx = 0;
+              } else if (ent.vx < 0) {
+                ent.x = box.maxX + halfW;
+                ent.vx = 0;
+              }
+            }
+          }
+        }
+
+        // Vertical step
+        const wasGrounded = ent.grounded;
+        ent.grounded = false;
+        ent.y += ent.vy * dt;
+
+        for (const box of solidBoxes) {
+          if (ent.x + halfW > box.minX + 0.04 && ent.x - halfW < box.maxX - 0.04) {
+            if (ent.y < box.maxY && ent.y + ent.h > box.minY) {
+              if (ent.vy <= 0 && ent.y >= box.maxY - 0.45) {
+                ent.y = box.maxY;
+                if (!wasGrounded && ent.vy < -5 && ent === this.player) {
+                  this.sound.playLand();
+                }
+                ent.vy = 0;
+                ent.grounded = true;
+              } else if (ent.vy > 0 && ent.y + ent.h <= box.minY + 0.45) {
+                ent.y = box.minY - ent.h;
+                ent.vy = 0;
+              }
+            }
+          }
+        }
+      }
+
+      getSolidColliders(ignoreEntity) {
+        const list = [...this.entities.platforms];
+        for (const d of this.entities.doors) {
+          if (!d.isOpen) {
+            list.push({ minX: d.x, maxX: d.x + d.w, minY: d.currentY, maxY: d.currentY + d.h });
+          }
+        }
+        for (const c of this.entities.crates) {
+          if (c !== ignoreEntity && c !== this.player.grabbedCrate) {
+            list.push({ minX: c.x - c.w / 2, maxX: c.x + c.w / 2, minY: c.y, maxY: c.y + c.h });
+          }
+        }
+        return list;
+      }
+
+      updateInteractions(interactHeld, dt) {
+        const p = this.player;
+        const hintEl = document.getElementById('interact-hint');
+        let promptText = '';
+
+        // 1. Check nearby Switches
+        for (const sw of this.entities.switches) {
+          if (Math.abs(p.x - sw.x) < 1.3 && Math.abs(p.y - sw.y) < 1.6) {
+            promptText = sw.activated ? '[E] SWITCH ACTIVE' : '[E] ACTIVATE SWITCH';
+            if (this.interactPressedEdge && !sw.activated) {
+              sw.activated = true;
+              sw.lever.rotation.z = -0.45;
+              sw.lever.material.color.setHex(0x38bdf8);
+              this.sound.playSwitch();
+              this.openDoorById(sw.targetDoor);
+            }
+          }
+        }
+
+        // 2. Check nearby Crates for Grab/Push/Pull
+        if (p.grabbedCrate) {
+          if (!interactHeld || !p.grounded) {
+            p.grabbedCrate = null;
+          } else {
+            promptText = 'HOLD [E] + A/D TO PUSH / PULL';
+            const crate = p.grabbedCrate;
+            crate.vx = p.vx;
+            const offset = p.facing * (p.w / 2 + crate.w / 2 + 0.05);
+            crate.x = p.x + offset;
+          }
+        } else if (!p.inWater && p.grounded) {
+          for (const crate of this.entities.crates) {
+            const dist = Math.abs(p.x - crate.x);
+            if (dist < 1.45 && Math.abs(p.y - crate.y) < 1.0) {
+              promptText = 'HOLD [E] TO GRAB CRATE';
+              if (interactHeld) {
+                p.grabbedCrate = crate;
+                p.facing = crate.x >= p.x ? 1 : -1;
+              }
+            }
+          }
+        }
+
+        if (promptText) {
+          hintEl.textContent = promptText;
+          hintEl.style.opacity = '1';
+        } else {
+          hintEl.style.opacity = '0';
+        }
+      }
+
+      openDoorById(doorId) {
+        const door = this.entities.doors.find(d => d.id === doorId);
+        if (door && !door.isOpen) {
+          door.isOpen = true;
+          this.sound.playDoor();
+        }
+      }
+
+      closeDoorById(doorId) {
+        const door = this.entities.doors.find(d => d.id === doorId);
+        if (door && door.isOpen) {
+          door.isOpen = false;
+          this.sound.playDoor();
+        }
+      }
+
+      updateCratesAndPuzzles(dt) {
+        // Update crate gravity & position
+        for (const crate of this.entities.crates) {
+          crate.vy -= 22.0 * dt;
+          this.moveEntityWithCollisions(crate, dt);
+          crate.mesh.position.set(crate.x, crate.y + crate.h / 2, 0);
+        }
+
+        // Update Pressure Plates (crate or player weight)
+        for (const pl of this.entities.plates) {
+          let weighted = Math.abs(this.player.x - pl.x) < 1.1 && Math.abs(this.player.y - pl.y) < 0.6;
+          for (const crate of this.entities.crates) {
+            if (Math.abs(crate.x - pl.x) < 1.2 && Math.abs(crate.y - pl.y) < 0.6) {
+              weighted = true;
+            }
+          }
+          if (weighted && !pl.pressed) {
+            pl.pressed = true;
+            pl.mesh.position.y = pl.y - 0.06;
+            pl.mesh.material.color.setHex(0x38bdf8);
+            this.sound.playSwitch();
+            this.openDoorById(pl.targetDoor);
+          } else if (!weighted && pl.pressed) {
+            pl.pressed = false;
+            pl.mesh.position.y = pl.y;
+            pl.mesh.material.color.setHex(0xd97706);
+            this.closeDoorById(pl.targetDoor);
+          }
+        }
+
+        // Smoothly animate Doors
+        for (const d of this.entities.doors) {
+          const targetY = d.isOpen ? d.openY : d.closedY;
+          d.currentY += (targetY - d.currentY) * Math.min(1, 3.2 * dt);
+          d.mesh.position.y = d.currentY + d.h / 2;
+        }
+      }
+
+      updateEnemies(dt) {
+        const p = this.player;
+        let anyAlert = false;
+
+        for (const e of this.entities.enemies) {
+          const dx = p.x - e.x;
+          const dy = (p.y + p.h * 0.5) - (e.y + 0.8);
+          const dist = Math.hypot(dx, dy);
+
+          // Check obstacle occlusion (cover blocks or solid doors)
+          const occluded = this.isLineOccluded(e.x, p.x);
+
+          // Visibility check (stealth: crouching behind cover or outside searchlight reduces detection)
+          const facingPlayer = (dx >= 0 && e.dir === 1) || (dx < 0 && e.dir === -1);
+          const effectiveRange = p.crouching ? e.meta.visionRange * 0.58 : e.meta.visionRange;
+          const canSeePlayer = !occluded &&
+            (facingPlayer || dist < 2.2) &&
+            dist < effectiveRange &&
+            Math.abs(dy) < 3.4 &&
+            p.invulnTimer <= 0;
+
+          if (canSeePlayer) {
+            if (e.state === 'PATROL') {
+              this.sound.playAlert();
+            }
+            e.state = 'CHASE';
+            e.alertTimer = 2.6;
+            e.dir = dx >= 0 ? 1 : -1;
+          } else if (e.alertTimer > 0) {
+            e.alertTimer -= dt;
+            if (e.alertTimer <= 0) {
+              e.state = 'PATROL';
+            }
+          }
+
+          if (e.state === 'CHASE') {
+            anyAlert = true;
+            const chaseSpeed = e.meta.speed * 1.45;
+            e.x += e.dir * chaseSpeed * dt;
+            if (e.meta.aquatic) {
+              e.y += Math.sign(dy) * Math.min(Math.abs(dy), chaseSpeed * 0.7 * dt);
+            }
+            if (e.coneMesh) {
+              e.coneMesh.material.color.setHex(0xef4444);
+              e.coneMesh.material.opacity = 0.24;
+            }
+          } else {
+            // Standard Patrol Route
+            e.x += e.dir * e.meta.speed * dt;
+            if (e.x >= e.patrolMax) {
+              e.x = e.patrolMax;
+              e.dir = -1;
+            } else if (e.x <= e.patrolMin) {
+              e.x = e.patrolMin;
+              e.dir = 1;
+            }
+            if (e.coneMesh) {
+              e.coneMesh.material.color.setHex(e.meta.aquatic ? 0x38bdf8 : 0xe2e8f0);
+              e.coneMesh.material.opacity = 0.14;
+            }
+          }
+
+          // Update enemy transform
+          const bob = Math.sin(performance.now() * 0.006) * (e.meta.flying || e.meta.aquatic ? 0.15 : 0.03);
+          e.group.position.set(e.x, e.y + bob, 0);
+          e.group.rotation.y = e.dir === 1 ? 0 : Math.PI;
+
+          // Contact / Capture Check
+          if (Math.abs(p.x - e.x) < 0.78 && Math.abs((p.y + 0.7) - (e.y + 0.7)) < 1.15) {
+            this.triggerDeath(`CAPTURED BY ${e.meta.displayName.toUpperCase()}`);
+            return;
+          }
+        }
+
+        const overlay = document.getElementById('cinematic-overlay');
+        if (anyAlert) {
+          overlay.classList.add('danger');
+        } else {
+          overlay.classList.remove('danger');
+        }
+      }
+
+      isLineOccluded(x1, x2) {
+        const minX = Math.min(x1, x2);
+        const maxX = Math.max(x1, x2);
+        // Closed doors block line of sight
+        for (const d of this.entities.doors) {
+          if (!d.isOpen && d.x > minX && d.x < maxX) return true;
+        }
+        // Cover crates/barriers block sight when player is crouching
+        if (this.player.crouching) {
+          for (const c of this.entities.crates) {
+            if (c.x > minX && c.x < maxX) return true;
+          }
+          const cfg = CHAPTERS[this.currentChapterIdx];
+          for (const plat of cfg.platforms) {
+            if (plat.type === 'cover') {
+              const cx = plat.x + plat.w / 2;
+              if (cx > minX && cx < maxX) return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      updateTriggers(cfg) {
+        const p = this.player;
+
+        // 1. Environmental Hazards
+        for (const h of this.entities.hazards) {
+          if (p.x + 0.25 > h.minX && p.x - 0.25 < h.maxX && p.y < h.maxY && p.y + p.h > h.minY) {
+            const msg = h.type === 'abyss' ? 'FELL INTO THE ABYSS' :
+                        h.type === 'electric' ? 'HIGH-VOLTAGE DISCHARGE' : 'FATAL OBSTACLE';
+            this.triggerDeath(msg);
+            return;
+          }
+        }
+
+        // 2. Checkpoints
+        for (const cp of this.entities.checkpoints) {
+          if (!cp.triggered && Math.abs(p.x - cp.x) < 1.2) {
+            cp.triggered = true;
+            cp.bulb.material.color.setHex(0x38bdf8);
+            this.sound.playCheckpoint();
+
+            this.persistence.saveData.hasSave = true;
+            this.persistence.saveData.currentChapter = this.currentChapterIdx;
+            this.persistence.saveData.checkpointX = cp.x;
+            this.persistence.saveData.checkpointY = cp.y + 0.5;
+            this.persistence.writeSave();
+
+            const toast = document.getElementById('hud-checkpoint-toast');
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2400);
+          }
+        }
+
+        // 3. Secret Discovery Orb
+        if (this.entities.secret && !this.entities.secret.collected) {
+          const s = this.entities.secret;
+          s.mesh.rotation.y += 0.03;
+          if (Math.abs(p.x - s.x) < 1.0 && Math.abs((p.y + 0.8) - s.y) < 1.2) {
+            s.collected = true;
+            s.mesh.material.color.setHex(0x334155);
+            this.sound.playCheckpoint();
+            if (!this.persistence.saveData.secretsFound.includes(this.currentChapterIdx)) {
+              this.persistence.saveData.secretsFound.push(this.currentChapterIdx);
+              this.persistence.writeSave();
+            }
+            document.getElementById('hud-secrets-count').textContent = `SECRETS: ${this.persistence.saveData.secretsFound.length}/12`;
+            const toast = document.getElementById('hud-checkpoint-toast');
+            toast.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> SECRET ARCHIVE DISCOVERED`;
+            toast.style.opacity = '1';
+            setTimeout(() => {
+              toast.style.opacity = '0';
+              toast.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span> CHECKPOINT SAVED`;
+            }, 3000);
+          }
+        }
+
+        // 4. Chapter Exit Portal
+        if (p.x >= cfg.exitX) {
+          this.completeCurrentChapter();
+        }
+      }
+
+      animatePlayerModel(dt) {
+        const p = this.player;
+        if (!p.mesh) return;
+
+        p.mesh.position.set(p.x, p.y, 0);
+        p.mesh.rotation.y = p.facing === 1 ? 0 : Math.PI;
+
+        const speed = Math.abs(p.vx);
+        if (speed > 0.4 && p.grounded && !p.inWater) {
+          p.stepTimer += dt * speed * 0.42;
+          if (p.stepTimer >= 1) {
+            p.stepTimer = 0;
+            this.sound.playStep(false);
+          }
+        } else if (p.inWater && (speed > 0.5 || Math.abs(p.vy) > 0.5)) {
+          p.stepTimer += dt * 1.6;
+          if (p.stepTimer >= 1) {
+            p.stepTimer = 0;
+            this.sound.playStep(true);
+          }
+        }
+
+        // Articulated limb animation
+        if (p.limbs && p.limbs.torso) {
+          p.animTime += dt * (speed * 2.2 + 2.0);
+          const swing = speed > 0.25 ? Math.sin(p.animTime) * 0.65 : Math.sin(p.animTime * 0.5) * 0.05;
+
+          if (p.inWater) {
+            p.mesh.rotation.z = -0.75;
+            p.limbs.leftLeg.rotation.z = Math.sin(p.animTime * 1.5) * 0.5;
+            p.limbs.rightLeg.rotation.z = -Math.sin(p.animTime * 1.5) * 0.5;
+            p.limbs.leftArm.rotation.z = Math.cos(p.animTime * 1.5) * 0.6 + 1.2;
+            p.limbs.rightArm.rotation.z = -Math.cos(p.animTime * 1.5) * 0.6 + 1.2;
+          } else {
+            p.mesh.rotation.z = p.crouching ? -0.25 : 0;
+            p.mesh.scale.y = p.crouching ? 0.62 : 1.0;
+            p.limbs.leftLeg.rotation.z = swing;
+            p.limbs.rightLeg.rotation.z = -swing;
+
+            if (p.grabbedCrate) {
+              p.limbs.leftArm.rotation.z = 1.25;
+              p.limbs.rightArm.rotation.z = 1.25;
+            } else {
+              p.limbs.leftArm.rotation.z = -swing * 0.85;
+              p.limbs.rightArm.rotation.z = swing * 0.85;
+            }
+          }
+        }
+      }
+
+      updateCinematicCamera(cfg, dt) {
+        const p = this.player;
+        const lookAhead = p.facing * 2.4;
+        const targetX = Math.max(4, Math.min(cfg.length - 4, p.x + lookAhead));
+        const targetY = Math.max(-1.5, p.y + 2.2);
+        const targetZ = p.inWater ? 14.5 : 16.8;
+
+        this.camPos.x += (targetX - this.camPos.x) * Math.min(1, 4.2 * dt);
+        this.camPos.y += (targetY - this.camPos.y) * Math.min(1, 3.6 * dt);
+        this.camPos.z += (targetZ - this.camPos.z) * Math.min(1, 2.5 * dt);
+
+        let shakeX = 0;
+        let shakeY = 0;
+        if (this.camShake > 0 && this.persistence.settings.cameraShake) {
+          shakeX = (Math.random() - 0.5) * this.camShake;
+          shakeY = (Math.random() - 0.5) * this.camShake;
+          this.camShake = Math.max(0, this.camShake - dt * 1.4);
+        }
+
+        this.camera.position.set(this.camPos.x + shakeX, this.camPos.y + shakeY, this.camPos.z);
+        this.camera.lookAt(this.camPos.x, this.camPos.y - 0.6, 0);
+      }
+
+      updateParticles(dt) {
+        if (!this.entities.particles) return;
+        const { points, weather, length } = this.entities.particles;
+        const pos = points.geometry.attributes.position.array;
+        for (let i = 0; i < pos.length; i += 3) {
+          if (weather === 'rain') {
+            pos[i + 1] -= 14 * dt;
+            pos[i] -= 1.8 * dt;
+            if (pos[i + 1] < -4) {
+              pos[i + 1] = 14;
+              pos[i] = Math.random() * (length + 20) - 10;
+            }
+          } else {
+            pos[i + 1] += Math.sin(performance.now() * 0.001 + i) * 0.25 * dt;
+          }
+        }
+        points.geometry.attributes.position.needsUpdate = true;
+      }
+
+      animate() {
+        requestAnimationFrame(() => this.animate());
+        const dt = Math.min(this.clock.getDelta(), 0.05);
+
+        for (const m of this.mixers) m.update(dt);
+
+        if (this.state === 'PLAYING') {
+          this.updateGameplay(dt);
+        } else if (this.state === 'MENU') {
+          // Slow atmospheric camera pan on Main Menu
+          const t = performance.now() * 0.00025;
+          this.camera.position.set(12 + Math.sin(t) * 6, 3.2, 16);
+          this.camera.lookAt(14 + Math.sin(t) * 6, 2.0, 0);
+          this.updateParticles(dt);
+        }
+
+        this.renderer.render(this.scene, this.camera);
+      }
+
+      // --------------------------------------------------------------------------
+      // INPUT HANDLERS (Desktop Keyboard, Gamepad, Mobile Multitouch)
+      // --------------------------------------------------------------------------
+      pollGamepad() {
+        const res = { left: false, right: false, jump: false, crouch: false, interact: false, sprint: false };
+        if (!navigator.getGamepads) return res;
+        const pads = navigator.getGamepads();
+        const pad = pads && pads[0];
+        if (!pad) return res;
+
+        if (pad.axes[0] < -0.35 || pad.buttons[14]?.pressed) res.left = true;
+        if (pad.axes[0] > 0.35 || pad.buttons[15]?.pressed) res.right = true;
+        if (pad.buttons[0]?.pressed) {
+          if (!this._gpJumpPrev) this.jumpPressedEdge = true;
+          res.jump = true;
+          this._gpJumpPrev = true;
+        } else {
+          this._gpJumpPrev = false;
+        }
+        if (pad.buttons[2]?.pressed) {
+          if (!this._gpIntPrev) this.interactPressedEdge = true;
+          res.interact = true;
+          this._gpIntPrev = true;
+        } else {
+          this._gpIntPrev = false;
+        }
+        if (pad.buttons[1]?.pressed) res.crouch = true;
+        if (pad.buttons[5]?.pressed) res.sprint = true;
+        return res;
+      }
+
+      bindEvents() {
+        window.addEventListener('resize', () => {
+          this.camera.aspect = window.innerWidth / window.innerHeight;
+          this.camera.updateProjectionMatrix();
+          this.renderer.setSize(window.innerWidth, window.innerHeight);
+          this.updateTouchControlsVisibility();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden && this.state === 'PLAYING') {
+            this.pauseGame();
+          }
+        });
+
+        window.addEventListener('keydown', (e) => {
+          if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+            e.preventDefault();
+          }
+          if (!this.keys[e.code]) {
+            if (e.code === 'Space' || e.code === 'KeyW' || e.code === 'ArrowUp') {
+              this.jumpPressedEdge = true;
+            }
+            if (e.code === 'KeyE') {
+              this.interactPressedEdge = true;
+            }
+            if (e.code === 'Escape') {
+              if (!document.getElementById('menu-modal').classList.contains('hidden')) {
+                this.closeModal();
+              } else if (this.state === 'PLAYING') {
+                this.pauseGame();
+              } else if (this.state === 'PAUSED') {
+                this.resumeGame();
+              }
+            }
+            if (e.code === 'KeyR' && (this.state === 'PLAYING' || this.state === 'GAMEOVER')) {
+              this.restartCheckpoint();
+            }
+            if (e.code === 'KeyF') {
+              this.toggleFullscreen();
+            }
+            if (e.code === 'KeyM') {
+              this.toggleMute();
+            }
+          }
+          this.keys[e.code] = true;
+        });
+
+        window.addEventListener('keyup', (e) => {
+          this.keys[e.code] = false;
+        });
+
+        // Bind Mobile Touch Controls with Multitouch Support
+        const bindTouchBtn = (id, key, isEdge = false) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          const onStart = (ev) => {
+            ev.preventDefault();
+            el.classList.add('active');
+            if (isEdge && !this.touchInput[key]) {
+              if (key === 'jump') this.jumpPressedEdge = true;
+              if (key === 'interact') this.interactPressedEdge = true;
+            }
+            this.touchInput[key] = true;
+          };
+          const onEnd = (ev) => {
+            ev.preventDefault();
+            el.classList.remove('active');
+            this.touchInput[key] = false;
+          };
+          el.addEventListener('touchstart', onStart, { passive: false });
+          el.addEventListener('touchend', onEnd, { passive: false });
+          el.addEventListener('touchcancel', onEnd, { passive: false });
+          el.addEventListener('mousedown', onStart);
+          el.addEventListener('mouseup', onEnd);
+          el.addEventListener('mouseleave', onEnd);
+        };
+
+        bindTouchBtn('touch-left', 'left');
+        bindTouchBtn('touch-right', 'right');
+        bindTouchBtn('touch-jump', 'jump', true);
+        bindTouchBtn('touch-interact', 'interact', true);
+        bindTouchBtn('touch-crouch', 'crouch');
+        bindTouchBtn('touch-swim-up', 'swimUp');
+        bindTouchBtn('touch-swim-down', 'swimDown');
+      }
+
+      updateTouchControlsVisibility() {
+        const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0 || window.innerWidth < 920;
+        const el = document.getElementById('touch-controls');
+        if (isTouchDevice && this.state === 'PLAYING') {
+          el.classList.remove('hidden');
+        } else {
+          el.classList.add('hidden');
+        }
+      }
+
+      // --------------------------------------------------------------------------
+      // MENU NAVIGATION & FUNCTIONAL BUTTON HANDLERS
+      // --------------------------------------------------------------------------
+      hideAllMenus() {
+        ['main-menu', 'pause-menu', 'gameover-screen', 'ending-screen', 'game-hud', 'touch-controls'].forEach(id => {
+          document.getElementById(id).classList.add('hidden');
+        });
+        this.closeModal();
+      }
+
+      returnToMainMenu() {
+        this.hideAllMenus();
+        this.buildChapter(0, true);
+        this.state = 'MENU';
+        this.updateSaveStatusUI();
+        document.getElementById('main-menu').classList.remove('hidden');
+      }
+
+      pauseGame() {
+        if (this.state !== 'PLAYING') return;
+        this.state = 'PAUSED';
+        document.getElementById('touch-controls').classList.add('hidden');
+        document.getElementById('pause-menu').classList.remove('hidden');
+      }
+
+      resumeGame() {
+        if (this.state !== 'PAUSED') return;
+        document.getElementById('pause-menu').classList.add('hidden');
+        this.state = 'PLAYING';
+        this.updateTouchControlsVisibility();
+      }
+
+      restartCheckpoint() {
+        document.getElementById('pause-menu').classList.add('hidden');
+        document.getElementById('gameover-screen').classList.add('hidden');
+        this.startChapter(this.currentChapterIdx, false);
+      }
+
+      toggleFullscreen() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+
+      toggleMute() {
+        this.sound.init();
+        this.sound.muted = !this.sound.muted;
+        this.sound.updateVolumes(
+          this.persistence.settings.masterVolume,
+          this.persistence.settings.musicVolume,
+          this.persistence.settings.sfxVolume,
+          this.sound.muted
+        );
+        const label = this.sound.muted ? 'OFF' : 'ON';
+        document.getElementById('btn-menu-mute').textContent = `[M] AUDIO: ${label}`;
+        document.getElementById('btn-hud-audio').textContent = this.sound.muted ? 'MUTE' : 'SFX';
+      }
+
+      updateSaveStatusUI() {
+        const label = document.getElementById('save-status-label');
+        if (this.persistence.saveData.hasSave) {
+          const ch = CHAPTERS[this.persistence.saveData.currentChapter];
+          label.textContent = `SAVED: CH ${ch.num} – ${ch.title}`;
+        } else {
+          label.textContent = 'NO SAVED GAME FOUND';
+        }
+      }
+
+      openModal(title, htmlContent) {
+        document.getElementById('modal-title').textContent = title;
+        document.getElementById('modal-body').innerHTML = htmlContent;
+        document.getElementById('menu-modal').classList.remove('hidden');
+      }
+
+      closeModal() {
+        document.getElementById('menu-modal').classList.add('hidden');
+      }
+
+      bindUI() {
+        // Main Menu Buttons
+        document.getElementById('btn-play').onclick = () => {
+          const idx = this.persistence.saveData.hasSave ? this.persistence.saveData.currentChapter : 0;
+          this.startChapter(idx, !this.persistence.saveData.hasSave);
+        };
+
+        document.getElementById('btn-continue').onclick = () => {
+          if (!this.persistence.saveData.hasSave) {
+            this.openModal('CONTINUE', `
+              <p class="text-slate-300 tracking-wider uppercase text-center py-6">NO SAVED GAME FOUND.</p>
+              <div class="flex justify-center">
+                <button id="modal-start-new" class="px-5 py-2 bg-slate-100 text-slate-950 text-xs tracking-[0.2em] uppercase font-semibold rounded">Start Chapter 01</button>
+              </div>
+            `);
+            document.getElementById('modal-start-new').onclick = () => this.startChapter(0, true);
+          } else {
+            this.startChapter(this.persistence.saveData.currentChapter, false);
+          }
+        };
+
+        document.getElementById('btn-newgame').onclick = () => {
+          this.openModal('START A NEW GAME?', `
+            <p class="text-slate-300 text-center py-4">Starting a new game will reset your current checkpoint progress. Are you sure?</p>
+            <div class="flex justify-center gap-4 pt-2">
+              <button id="confirm-new-yes" class="px-6 py-2 bg-red-600/90 hover:bg-red-500 text-white text-xs tracking-[0.25em] uppercase rounded">YES</button>
+              <button id="confirm-new-cancel" class="px-6 py-2 border border-slate-700 text-slate-300 hover:text-white text-xs tracking-[0.25em] uppercase rounded">CANCEL</button>
+            </div>
+          `);
+          document.getElementById('confirm-new-yes').onclick = () => {
+            this.persistence.resetSave();
+            this.startChapter(0, true);
+          };
+          document.getElementById('confirm-new-cancel').onclick = () => this.closeModal();
+        };
+
+        document.getElementById('btn-chapters').onclick = () => this.showChapterSelectModal();
+        document.getElementById('btn-settings').onclick = () => this.showSettingsModal();
+        document.getElementById('btn-controls').onclick = () => this.showControlsModal();
+        document.getElementById('btn-extras').onclick = () => this.showExtrasModal();
+        document.getElementById('btn-credits').onclick = () => this.showCreditsModal();
+
+        document.getElementById('btn-menu-fullscreen').onclick = () => this.toggleFullscreen();
+        document.getElementById('btn-menu-mute').onclick = () => this.toggleMute();
+        document.getElementById('btn-close-modal').onclick = () => this.closeModal();
+
+        // HUD Buttons
+        document.getElementById('btn-hud-pause').onclick = () => this.pauseGame();
+        document.getElementById('btn-hud-fullscreen').onclick = () => this.toggleFullscreen();
+        document.getElementById('btn-hud-audio').onclick = () => this.toggleMute();
+
+        // Pause Menu Buttons
+        document.getElementById('btn-pause-resume').onclick = () => this.resumeGame();
+        document.getElementById('btn-pause-restart').onclick = () => this.restartCheckpoint();
+        document.getElementById('btn-pause-settings').onclick = () => this.showSettingsModal();
+        document.getElementById('btn-pause-controls').onclick = () => this.showControlsModal();
+        document.getElementById('btn-pause-mainmenu').onclick = () => this.returnToMainMenu();
+
+        // Game Over Buttons
+        document.getElementById('btn-gameover-restart').onclick = () => this.restartCheckpoint();
+        document.getElementById('btn-gameover-mainmenu').onclick = () => this.returnToMainMenu();
+
+        // Ending Screen Buttons
+        document.getElementById('btn-end-newgame').onclick = () => {
+          this.persistence.resetSave();
+          this.startChapter(0, true);
+        };
+        document.getElementById('btn-end-chapters').onclick = () => this.showChapterSelectModal();
+        document.getElementById('btn-end-mainmenu').onclick = () => this.returnToMainMenu();
+      }
+
+      showChapterSelectModal() {
+        const unlocked = this.persistence.saveData.unlockedChapters;
+        const cards = CHAPTERS.map((ch, idx) => {
+          const isUnlocked = idx < unlocked;
+          const isCurrent = idx === this.persistence.saveData.currentChapter && this.persistence.saveData.hasSave;
+          return `
+            <button data-ch="${idx}" ${!isUnlocked ? 'disabled' : ''}
+              class="text-left p-3.5 rounded border ${isUnlocked ? 'border-slate-700 hover:border-sky-400 bg-slate-900/60 cursor-pointer' : 'border-slate-800/60 bg-slate-950/60 opacity-50 cursor-not-allowed'} transition-all">
+              <div class="flex justify-between items-center text-[10px] tracking-[0.2em] ${isCurrent ? 'text-sky-400' : 'text-slate-400'} uppercase mb-1">
+                <span>CHAPTER ${ch.num}</span>
+                <span>${isUnlocked ? (isCurrent ? 'ACTIVE' : 'UNLOCKED') : 'LOCKED'}</span>
+              </div>
+              <div class="text-xs font-medium tracking-[0.15em] text-slate-100 uppercase">${ch.title}</div>
+              <div class="text-[10px] text-slate-400 mt-1">${ch.subtitle}</div>
+            </button>
+          `;
+        }).join('');
+
+        this.openModal('CHAPTER SELECT (12 CHAPTERS)', `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${cards}</div>
+        `);
+
+        document.querySelectorAll('#modal-body button[data-ch]').forEach(btn => {
+          btn.onclick = () => {
+            const idx = parseInt(btn.getAttribute('data-ch'), 10);
+            this.startChapter(idx, true);
+          };
+        });
+      }
+
+      showSettingsModal() {
+        const s = this.persistence.settings;
+        this.openModal('SETTINGS', `
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label class="block">
+                <span class="text-[10px] tracking-[0.2em] uppercase text-slate-400">Master Volume (${Math.round(s.masterVolume * 100)}%)</span>
+                <input id="set-master" type="range" min="0" max="1" step="0.05" value="${s.masterVolume}" class="w-full mt-1 accent-sky-400" />
+              </label>
+              <label class="block">
+                <span class="text-[10px] tracking-[0.2em] uppercase text-slate-400">Music Volume (${Math.round(s.musicVolume * 100)}%)</span>
+                <input id="set-music" type="range" min="0" max="1" step="0.05" value="${s.musicVolume}" class="w-full mt-1 accent-sky-400" />
+              </label>
+              <label class="block">
+                <span class="text-[10px] tracking-[0.2em] uppercase text-slate-400">SFX Volume (${Math.round(s.sfxVolume * 100)}%)</span>
+                <input id="set-sfx" type="range" min="0" max="1" step="0.05" value="${s.sfxVolume}" class="w-full mt-1 accent-sky-400" />
+              </label>
+              <label class="block">
+                <span class="text-[10px] tracking-[0.2em] uppercase text-slate-400">Brightness (${Math.round(s.brightness * 100)}%)</span>
+                <input id="set-bright" type="range" min="0.7" max="1.5" step="0.05" value="${s.brightness}" class="w-full mt-1 accent-sky-400" />
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+              <label class="block">
+                <span class="text-[10px] tracking-[0.2em] uppercase text-slate-400">Graphics Quality</span>
+                <select id="set-gfx" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200">
+                  <option value="LOW" ${s.graphicsQuality === 'LOW' ? 'selected' : ''}>LOW (Mobile Battery)</option>
+                  <option value="MEDIUM" ${s.graphicsQuality === 'MEDIUM' ? 'selected' : ''}>MEDIUM</option>
+                  <option value="HIGH" ${s.graphicsQuality === 'HIGH' ? 'selected' : ''}>HIGH</option>
+                  <option value="ULTRA" ${s.graphicsQuality === 'ULTRA' ? 'selected' : ''}>ULTRA</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="text-[10px] tracking-[0.2em] uppercase text-slate-400">Protagonist GLB</span>
+                <select id="set-hero" class="w-full mt-1 bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200">
+                  <option value="hero_01" ${s.heroVariant === 'hero_01' ? 'selected' : ''}>01_HERO_RedShirt_Child</option>
+                  <option value="hero_02" ${s.heroVariant === 'hero_02' ? 'selected' : ''}>hero_02_blue_hooded</option>
+                </select>
+              </label>
+              <div class="flex flex-col justify-center gap-2 pt-3">
+                <label class="flex items-center gap-2 text-xs">
+                  <input id="set-shadows" type="checkbox" ${s.shadows ? 'checked' : ''} class="accent-sky-400" />
+                  <span>Real-Time Shadows</span>
+                </label>
+                <label class="flex items-center gap-2 text-xs">
+                  <input id="set-shake" type="checkbox" ${s.cameraShake ? 'checked' : ''} class="accent-sky-400" />
+                  <span>Camera Shake</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex justify-between pt-4 border-t border-slate-800">
+              <button id="btn-reset-settings" class="px-4 py-2 border border-slate-700 text-slate-400 hover:text-white text-xs tracking-[0.2em] uppercase rounded">Reset Defaults</button>
+              <button id="btn-save-settings" class="px-6 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-semibold text-xs tracking-[0.2em] uppercase rounded">Save Settings</button>
+            </div>
+          </div>
+        `);
+
+        document.getElementById('btn-save-settings').onclick = () => {
+          s.masterVolume = parseFloat(document.getElementById('set-master').value);
+          s.musicVolume = parseFloat(document.getElementById('set-music').value);
+          s.sfxVolume = parseFloat(document.getElementById('set-sfx').value);
+          s.brightness = parseFloat(document.getElementById('set-bright').value);
+          s.graphicsQuality = document.getElementById('set-gfx').value;
+          s.heroVariant = document.getElementById('set-hero').value;
+          s.shadows = document.getElementById('set-shadows').checked;
+          s.cameraShake = document.getElementById('set-shake').checked;
+
+          this.persistence.writeSettings();
+          this.renderer.shadowMap.enabled = s.shadows;
+          this.renderer.toneMappingExposure = s.brightness;
+          this.sound.updateVolumes(s.masterVolume, s.musicVolume, s.sfxVolume, this.sound.muted);
+          this.closeModal();
+        };
+
+        document.getElementById('btn-reset-settings').onclick = () => {
+          this.persistence.resetSettings();
+          this.showSettingsModal();
+        };
+      }
+
+      showControlsModal() {
+        this.openModal('CONTROLS', `
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-xs tracking-[0.2em] text-sky-400 uppercase mb-2">Desktop Keyboard</h3>
+              <ul class="space-y-1.5 text-xs text-slate-300">
+                <li><strong class="text-white">A / D or Left / Right:</strong> Move</li>
+                <li><strong class="text-white">Space / W / Up:</strong> Jump / Swim Up</li>
+                <li><strong class="text-white">C / Ctrl / S / Down:</strong> Crouch / Swim Down</li>
+                <li><strong class="text-white">Shift:</strong> Sprint</li>
+                <li><strong class="text-white">Hold E + Move:</strong> Grab, Push &amp; Pull Crates</li>
+                <li><strong class="text-white">Press E:</strong> Activate Switches</li>
+                <li><strong class="text-white">R:</strong> Restart Checkpoint &nbsp;|&nbsp; <strong class="text-white">F:</strong> Fullscreen</li>
+              </ul>
+            </div>
+            <div>
+              <h3 class="text-xs tracking-[0.2em] text-sky-400 uppercase mb-2">Mobile Touch &amp; Gamepad</h3>
+              <ul class="space-y-1.5 text-xs text-slate-300">
+                <li><strong class="text-white">Left Pad:</strong> Continuous Left / Right Movement</li>
+                <li><strong class="text-white">Right Pad:</strong> Jump, Crouch, Grab/Use</li>
+                <li><strong class="text-white">Underwater UI:</strong> Automatic Swim Up / Down buttons</li>
+                <li><strong class="text-white">Gamepad:</strong> Left Stick Move, A Jump, X Grab/Use, B Crouch</li>
+              </ul>
+            </div>
+          </div>
+        `);
+      }
+
+      showExtrasModal() {
+        const secretsHtml = CHAPTERS.map((ch, idx) => {
+          const found = this.persistence.saveData.secretsFound.includes(idx);
+          return `
+            <div class="p-2.5 rounded border ${found ? 'border-amber-500/40 bg-amber-950/20' : 'border-slate-800 bg-slate-950/40'}">
+              <div class="text-[10px] tracking-[0.2em] uppercase ${found ? 'text-amber-300' : 'text-slate-500'}">CH ${ch.num} ARCHIVE</div>
+              <div class="text-xs mt-1 ${found ? 'text-slate-200' : 'text-slate-600'}">${found ? ch.secret.note : '[ENCRYPTED – FIND SECRET ORB IN CHAPTER]'}</div>
+            </div>
+          `;
+        }).join('');
+
+        const manifestRows = ASSET_MANIFEST.environments.map(e => `
+          <tr class="border-b border-slate-800/70 text-[11px]">
+            <td class="py-1.5 text-slate-200">${e.design}</td>
+            <td class="py-1.5 text-sky-300 font-mono text-[10px]">${e.filename}</td>
+            <td class="py-1.5 text-slate-400">${e.chapter}</td>
+            <td class="py-1.5 text-emerald-400">${e.status}</td>
+          </tr>
+        `).join('');
+
+        this.openModal('EXTRAS, ARCHIVES & GLB ASSET AUDIT', `
+          <div class="space-y-5">
+            <div>
+              <h3 class="text-xs tracking-[0.22em] text-amber-300 uppercase mb-2">Discovered Story Archives (${this.persistence.saveData.secretsFound.length}/12)</h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">${secretsHtml}</div>
+            </div>
+            <div>
+              <h3 class="text-xs tracking-[0.22em] text-sky-400 uppercase mb-2">Supplied 12-Design GLB Asset Mapping</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead>
+                    <tr class="border-b border-slate-700 text-[10px] uppercase text-slate-400">
+                      <th class="py-1">Asset</th>
+                      <th class="py-1">GLB Filename</th>
+                      <th class="py-1">Chapter</th>
+                      <th class="py-1">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>${manifestRows}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        `);
+      }
+
+      showCreditsModal() {
+        this.openModal('CREDITS', `
+          <div class="text-center space-y-4 py-4">
+            <div class="text-[10px] tracking-[0.4em] text-slate-500 uppercase">GAMERKIE ORIGINAL PRODUCTION</div>
+            <h3 class="text-xl tracking-[0.28em] text-slate-100 uppercase font-light">NOCTURNE – BEYOND THE SILENT WORLD</h3>
+            <p class="text-xs text-slate-400 max-w-md mx-auto">
+              2.5D Cinematic Horror Adventure Engine powered by Three.js, GLTFLoader, custom AABB &amp; buoyancy physics, and procedural Web Audio synthesis.
+            </p>
+            <div class="text-[11px] tracking-[0.2em] text-slate-500 uppercase pt-2">
+              ALL 12 CHAPTERS &bull; 7 ENEMY AI ARCHETYPES &bull; FULL MOBILE &amp; DESKTOP SUPPORT
+            </div>
+          </div>
+        `);
+      }
+    }
+
+    // Boot Engine on Window Load
+    window.addEventListener('load', () => {
+      window.nocturneGame = new NocturneEngine();
+    });
+  </script>
+</body>
+</html>
